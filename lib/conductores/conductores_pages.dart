@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'conductores_rutas.dart';
 
 // --------- Paleta local mínima ---------
@@ -148,17 +150,90 @@ class RutasAsignadasPage extends StatelessWidget {
                       style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: kTexto)),
                   const SizedBox(height: 16),
 
-                  // Placeholder de mapa
+                  // Mapa con marcadores de rutas
                   Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: const BorderSide(color: kBordeSuave),
                     ),
+                    clipBehavior: Clip.antiAlias,
                     child: SizedBox(
-                      height: 220,
-                      child: Center(
-                        child: Text('Mapa de ruta (placeholder)',
-                            style: Theme.of(context).textTheme.bodySmall),
+                      height: 400,
+                      child: FlutterMap(
+                        options: const MapOptions(
+                          initialCenter: LatLng(4.7110, -74.0721), // Bogotá, Colombia
+                          initialZoom: 11.0,
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.example.tradex_web',
+                          ),
+                          MarkerLayer(
+                            markers: [
+                              // Marcador Ruta 2680 - En tránsito
+                              Marker(
+                                point: const LatLng(4.7110, -74.0721),
+                                width: 80,
+                                height: 80,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: kVerde,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Text('2680',
+                                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    ),
+                                    const Icon(Icons.location_on, color: kVerde, size: 40),
+                                  ],
+                                ),
+                              ),
+                              // Marcador Ruta 2165 - En espera
+                              Marker(
+                                point: const LatLng(4.6500, -74.1000),
+                                width: 80,
+                                height: 80,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Text('2165',
+                                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    ),
+                                    const Icon(Icons.location_on, color: Colors.orange, size: 40),
+                                  ],
+                                ),
+                              ),
+                              // Marcador Ruta 2212 - Entregado
+                              Marker(
+                                point: const LatLng(4.7700, -74.0300),
+                                width: 80,
+                                height: 80,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: kVerde,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Text('2212',
+                                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    ),
+                                    const Icon(Icons.location_on, color: kVerde, size: 40),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),

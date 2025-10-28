@@ -2,6 +2,8 @@
 // Pantallas de "Creación de rutas" y "Rutas pendientes" + SidebarCliente.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'clientes_rutas.dart';
 
 // ----------- Paleta local mínima -----------
@@ -10,6 +12,7 @@ const kBg    = Color(0xFFF5F6FB);
 const kTexto = Color(0xFF0F172A);
 const kMuted = Color(0xFF6B7280);
 const kBordeSuave = Color(0xFFE5E7EB);
+const kVerde = Color(0xFF21BF73);
 
 // ================== Sidebar ==================
 class SidebarCliente extends StatelessWidget {
@@ -253,6 +256,105 @@ class RutasPendientesPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   const Text('Rutas pendientes',
                       style: TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: kTexto)),
+                  const SizedBox(height: 14),
+                  
+                  // Mapa con marcadores de conductores
+                  Card(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: kBordeSuave),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: SizedBox(
+                      height: 400,
+                      child: FlutterMap(
+                        options: const MapOptions(
+                          initialCenter: LatLng(6.2442, -75.5812), // Medellín, Colombia
+                          initialZoom: 12.0,
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.example.tradex_web',
+                          ),
+                          MarkerLayer(
+                            markers: [
+                              // Conductor: Juan Pérez
+                              Marker(
+                                point: const LatLng(6.2442, -75.5812),
+                                width: 120,
+                                height: 100,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: kVerde,
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.2),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Column(
+                                        children: [
+                                          Icon(Icons.person, color: Colors.white, size: 20),
+                                          SizedBox(height: 2),
+                                          Text('Juan Pérez',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.location_on, color: kVerde, size: 40),
+                                  ],
+                                ),
+                              ),
+                              // Conductor: Rosa López
+                              Marker(
+                                point: const LatLng(6.1700, -75.6000),
+                                width: 120,
+                                height: 100,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue,
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.2),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Column(
+                                        children: [
+                                          Icon(Icons.person, color: Colors.white, size: 20),
+                                          SizedBox(height: 2),
+                                          Text('Rosa López',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.location_on, color: Colors.blue, size: 40),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
                   const SizedBox(height: 14),
                   Container(
                     decoration: BoxDecoration(
