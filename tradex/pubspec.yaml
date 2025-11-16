@@ -1,0 +1,41 @@
+name: tradex_web
+description: "A new Flutter project."
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies: 
+  flutter:
+    sdk: flutter
+
+  # Íconos estilo iOS
+  cupertino_icons: ^1.0.8
+
+  # HTTP requests (conexión con API Flask)
+  http: ^1.2.0
+
+  # Mapa con Leaflet (OpenStreetMap)
+  flutter_map: ^7.0.2
+
+  # Soporte para coordenadas
+  latlong2: ^0.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Si luego agregas imágenes o fuentes personalizadas:
+  # assets:
+  #   - images/
+  # fonts:
+  #   - family: MyFont
+  #     fonts:
+  #       - asset: fonts/MyFont-Regular.ttf
