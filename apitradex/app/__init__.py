@@ -7,7 +7,19 @@ from .models import Rol
 
 def create_app():
     app = Flask(__name__)
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///logistica.db"
+
+    # -------------------------------
+    # CONEXIÓN A MySQL (XAMPP)
+    # -------------------------------
+    # Opción 1: usando usuario root SIN contraseña (típico en XAMPP recién instalado)
+    app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root@localhost:3306/tradex2"
+
+    # Si creaste un usuario propio, por ejemplo:
+    #   usuario: tradex
+    #   contraseña: 123456
+    # usa esto en vez de lo de arriba:
+    # app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://tradex:123456@localhost:3306/logistica"
+
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Inicializa extensiones (db, etc.)
@@ -25,7 +37,7 @@ def create_app():
         allow_headers=["Content-Type", "Authorization"]
     )
 
-    # Crear tablas + seed de roles
+    # Crear tablas + seed de roles (no rompe nada aunque ya creaste la BD con script)
     with app.app_context():
         db.create_all()
         if Rol.query.count() == 0:

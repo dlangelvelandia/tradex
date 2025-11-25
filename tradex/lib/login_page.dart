@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tradex_web/conductores/conductores_rutas.dart';
 import 'package:tradex_web/clientes/clientes_rutas.dart';
+import 'package:tradex_web/administrador/admin_rutas.dart';
 import 'services/api.dart';
 import 'session.dart';
 import 'auth_forms.dart';
@@ -41,10 +42,25 @@ class _LoginPageState extends State<LoginPage> {
 
       if (!mounted) return;
 
-      if (Session.role == 'Conductor') {
-        Navigator.pushNamedAndRemoveUntil(context, ConductoresRoutes.rutas, (_) => false);
+      // ---- Redirección según rol ----
+      if (Session.role == 'Admin') {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AdminRoutes.dashboard,      // '/admin/dashboard'
+          (_) => false,
+        );
+      } else if (Session.role == 'Conductor') {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          ConductoresRoutes.rutas,
+          (_) => false,
+        );
       } else if (Session.role == 'Cliente') {
-        Navigator.pushNamedAndRemoveUntil(context, ClientesRoutes.creacion, (_) => false);
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          ClientesRoutes.creacion,
+          (_) => false,
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Rol no soportado')),
@@ -64,11 +80,17 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _abrirOlvidoContrasena() {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordPage()));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
+    );
   }
 
   void _abrirCrearCuenta() {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterAccountPage()));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const RegisterAccountPage()),
+    );
   }
 
   @override
@@ -167,11 +189,11 @@ class _LoginPageState extends State<LoginPage> {
                             TextFormField(
                               controller: _usuarioCtrl,
                               decoration: const InputDecoration(
-                                labelText: 'Usuario',
-                                hintText: 'correo o usuario',
+                                labelText: 'Correo',
+                                hintText: 'tucorreo@dominio.com',
                               ),
                               validator: (v) =>
-                                  (v == null || v.trim().isEmpty) ? 'Ingresa tu usuario' : null,
+                                  (v == null || v.trim().isEmpty) ? 'Ingresa tu correo' : null,
                             ),
                             const SizedBox(height: 12),
 

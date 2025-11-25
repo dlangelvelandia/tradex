@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:tradex_web/login_page.dart';
 import 'package:tradex_web/conductores/conductores_rutas.dart';
-import 'package:tradex_web/clientes/clientes_rutas.dart';   // <- IMPORTANTE
+import 'package:tradex_web/clientes/clientes_rutas.dart';
+import 'package:tradex_web/administrador/admin_rutas.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,18 +20,31 @@ class TradexApp extends StatelessWidget {
       theme: buildTheme(),
       initialRoute: '/login',
       onGenerateRoute: (settings) {
-        final r1 = ConductoresRoutes.build(settings);
-        if (r1 != null) return r1;
+        // 1) Rutas de ADMIN
+        final rAdmin = AdminRoutes.build(settings);
+        if (rAdmin != null) return rAdmin;
 
-        final r2 = ClientesRoutes.build(settings);   // <- AQUÍ
-        if (r2 != null) return r2;
+        // 2) Rutas de CONDUCTOR
+        final rConductor = ConductoresRoutes.build(settings);
+        if (rConductor != null) return rConductor;
 
+        // 3) Rutas de CLIENTE
+        final rCliente = ClientesRoutes.build(settings);
+        if (rCliente != null) return rCliente;
+
+        // 4) Login como fallback
         switch (settings.name) {
           case '/':
           case '/login':
-            return MaterialPageRoute(builder: (_) => const LoginPage(), settings: settings);
+            return MaterialPageRoute(
+              builder: (_) => const LoginPage(),
+              settings: settings,
+            );
         }
-        return MaterialPageRoute(builder: (_) => const LoginPage(), settings: settings);
+        return MaterialPageRoute(
+          builder: (_) => const LoginPage(),
+          settings: settings,
+        );
       },
     );
   }

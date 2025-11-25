@@ -117,8 +117,8 @@ class Api {
     int? anio,
     double? capacidadKg,
     double? volumenM3,
-    String estado = 'disponible', // o 'activo' según tu preferencia
-    int? conductorId,            // asignación directa al conductor
+    String estado = 'disponible',
+    int? conductorId,
   }) {
     return _post('/vehiculos', {
       'placa': placa,
@@ -133,8 +133,10 @@ class Api {
   }
 
   /// Helper: trae el primer vehículo asignado a un conductor (o null si no hay).
-  static Future<Map<String, dynamic>?> obtenerVehiculoDeConductor(int conductorId) async {
-    final r = await listarVehiculos(conductorId: conductorId, perPage: 1, page: 1);
+  static Future<Map<String, dynamic>?> obtenerVehiculoDeConductor(
+      int conductorId) async {
+    final r =
+        await listarVehiculos(conductorId: conductorId, perPage: 1, page: 1);
     final list = (r['data'] as List?) ?? const [];
     if (list.isEmpty) return null;
     return (list.first as Map).cast<String, dynamic>();
@@ -149,7 +151,7 @@ class Api {
     String? descripcion,
     String estado = 'planificada',
     String? fechaProgramada, // 'YYYY-MM-DD'
-    String? horaInicio,      // 'HH:mm'
+    String? horaInicio, // 'HH:mm'
     int? conductorId,
     int? vehiculoId,
     Map<String, dynamic>? meta, // carga: peso/volumen/tipo
@@ -231,6 +233,19 @@ class Api {
     });
   }
 
+  /// Listado de rutas para el ADMIN (sin filtrar por usuario).
+  static Future<Map<String, dynamic>> listarRutasAdmin({
+    int perPage = 50,
+    int page = 1,
+    String? estado,
+  }) {
+    return _get('/rutas', params: {
+      if (estado != null) 'estado': estado,
+      'per_page': '$perPage',
+      'page': '$page',
+    });
+  }
+
   static Future<Map<String, dynamic>> geojsonRuta(int rutaId) {
     return _get('/rutas/$rutaId/geojson');
   }
@@ -247,11 +262,10 @@ class Api {
     return _post('/reset-password', {'token': token, 'password': newPassword});
   }
 
-
   // --- RUTAS: actualizar estado --------------------------------------
   static Future<Map<String, dynamic>> actualizarEstadoRuta({
     required int rutaId,
-    required String estado, // 'planificada' | 'en_progreso' | 'completada' | 'cancelada'
+    required String estado,
   }) {
     return _post('/rutas/$rutaId/estado', {'estado': estado});
   }
