@@ -1,0 +1,102 @@
+@startuml Estados_Ruta
+!theme cerulean-outline
+title Diagrama de Estados - Ciclo de Vida de una Ruta
+
+[*] --> Pendiente : Ruta creada\ncon asignaciones
+
+state "PENDIENTE" as Pendiente #LightYellow {
+    state "Esperando inicio" as EsperandoInicio
+    state "Recursos asignados" as RecursosAsignados {
+        state "Cliente asignado" as ClienteAsig
+        state "Conductor asignado" as ConductorAsig
+        state "Vehículo asignado" as VehiculoAsig
+    }
+    
+    EsperandoInicio --> RecursosAsignados
+}
+
+Pendiente --> EnCurso : Administrador\ninicia ruta
+Pendiente --> Cancelada : Administrador\ncancela ruta
+
+state "EN CURSO" as EnCurso #LightBlue {
+    state "Ruta activa" as RutaActiva
+    state "Vehículo en movimiento" as VehEnMovimiento
+    state "Conductor trabajando" as CondTrabajando
+    state "Visitando paradas" as VisitParadas {
+        state "Parada 1: Pendiente" as P1
+        state "Parada 2: Pendiente" as P2
+        state "Parada 3: Pendiente" as P3
+        
+        [*] --> P1
+        P1 --> P2 : Llegó a parada 1
+        P2 --> P3 : Llegó a parada 2
+        P3 --> [*] : Llegó a parada 3
+    }
+}
+
+EnCurso --> Completada : Todas las paradas\nvisitadas
+EnCurso --> Cancelada : Problema en la ruta\n(avería, emergencia)
+
+state "COMPLETADA" as Completada #LightGreen {
+    state "Ruta finalizada" as RutaFinalizada
+    state "Liberando recursos" as LiberandoRecursos {
+        state "Vehículo → disponible" as VehDisponible
+        state "Conductor → disponible" as CondDisponible
+    }
+    state "Generando reporte" as GenReporte
+    
+    RutaFinalizada --> LiberandoRecursos
+    LiberandoRecursos --> GenReporte
+}
+
+state "CANCELADA" as Cancelada #LightCoral {
+    state "Motivo de cancelación" as Motivo
+    state "Liberando recursos" as LiberandoRecursos2 {
+        state "Vehículo → disponible" as VehDisp2
+        state "Conductor → disponible" as CondDisp2
+    }
+    state "Notificando cliente" as NotifCliente
+    
+    Motivo --> LiberandoRecursos2
+    LiberandoRecursos2 --> NotifCliente
+}
+
+Completada --> [*]
+Cancelada --> [*]
+
+note right of Pendiente
+  **Estado Inicial:**
+  • estado = 'pendiente'
+  • Recursos asignados pero inactivos
+  • Esperando fecha programada
+  • Vehículo marcado como reservado
+end note
+
+note right of EnCurso
+  **Estado Activo:**
+  • estado = 'en_curso'
+  • Vehículo.estado = 'en_ruta'
+  • Conductor en servicio
+  • Seguimiento GPS activo
+  • Paradas se marcan como completadas
+end note
+
+note right of Completada
+  **Estado Final Exitoso:**
+  • estado = 'completada'
+  • Todas las paradas visitadas
+  • Vehículo.estado = 'disponible'
+  • Conductor libre para nueva ruta
+  • Reporte generado
+end note
+
+note right of Cancelada
+  **Estado Final con Error:**
+  • estado = 'cancelada'
+  • Motivo registrado
+  • Recursos liberados inmediatamente
+  • Cliente notificado
+  • Puede programarse nueva ruta
+end note
+
+@enduml

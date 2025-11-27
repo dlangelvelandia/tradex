@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagramas TRADEX - Sistema de Gestión Logística</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            padding: 0;
+            border-bottom: 3px solid #dee2e6;
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 20px 30px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #495057;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            position: relative;
+        }
+        
+        .tab:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #667eea;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #667eea;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .diagram-section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .diagram-section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .diagram-header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .diagram-header h2 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .diagram-header p {
+            color: #6c757d;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+        
+        .diagram-container {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .mermaid {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .download-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .info-box h3 {
+            color: #1976D2;
+            margin-bottom: 10px;
+        }
+        
+        .info-box ul {
+            margin-left: 20px;
+            color: #37474F;
+        }
+        
+        .info-box li {
+            margin: 5px 0;
+        }
+        
+        footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #28a745;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Diagramas UML - Sistema TRADEX</h1>
+            <p>Sistema de Gestión Logística con CRUD Completo</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">
+                <span class="badge">Flask + Flutter</span>
+                <span class="badge">MySQL</span>
+                <span class="badge">REST API</span>
+            </p>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showDiagram('arquitectura')">🏗️ Arquitectura</button>
+            <button class="tab" onclick="showDiagram('er')">🗄️ Entidad-Relación</button>
+            <button class="tab" onclick="showDiagram('clases')">📦 Clases</button>
+            <button class="tab" onclick="showDiagram('secuencia1')">🔄 Crear Usuario</button>
+            <button class="tab" onclick="showDiagram('secuencia2')">🚗 Asignar Conductor</button>
+            <button class="tab" onclick="showDiagram('componentes')">🧩 Componentes</button>
+            <button class="tab" onclick="showDiagram('despliegue')">🌐 Despliegue</button>
+        </div>
+        
+        <div class="content">
+            <!-- Diagrama de Arquitectura -->
+            <div id="arquitectura" class="diagram-section active">
+                <div class="diagram-header">
+                    <h2>Arquitectura de Tres Capas</h2>
+                    <p>El sistema TRADEX implementa una arquitectura cliente-servidor de tres capas: Presentación (Flutter Web), Negocio (Flask API) y Persistencia (MySQL).</p>
+                </div>
+                
+                <div class="diagram-container">
+                    <div class="mermaid">
+graph TB
+    subgraph "CAPA DE PRESENTACIÓN"
+        A[Flutter Web<br/>Puerto 8080]
+        A1[Interfaz de Usuario]
+        A2[Validaciones Cliente]
+        A3[Gestión de Estado]
+        A --> A1
+        A --> A2
+        A --> A3
+    end
+    
+    subgraph "CAPA DE NEGOCIO"
+        B[Flask API<br/>Puerto 5000]
+        B1[Endpoints REST]
+        B2[Validaciones]
+        B3[Autenticación JWT]
+        B4[Lógica de Negocio]
+        B --> B1
+        B --> B2
+        B --> B3
+        B --> B4
+    end
+    
+    subgraph "CAPA DE PERSISTENCIA"
+        C[MySQL<br/>Puerto 3306]
+        C1[Base de Datos tradex2]
+        C2[Integridad Referencial]
+        C3[Relaciones FK]
+        C --> C1
+        C --> C2
+        C --> C3
+    end
+    
+    A -->|HTTP/JSON<br/>REST API| B
+    B -->|SQLAlchemy ORM| C
+    
+    style A fill:#667eea,stroke:#333,stroke-width:2px,color:#fff
+    style B fill:#2a5298,stroke:#333,stroke-width:2px,color:#fff
+    style C fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h3>💡 Características de la Arquitectura:</h3>
+                    <ul>
+                        <li><strong>Separación de responsabilidades:</strong> Cada capa tiene funciones específicas</li>
+                        <li><strong>Escalabilidad:</strong> Las capas se pueden escalar independientemente</li>
+                        <li><strong>Mantenibilidad:</strong> Cambios en una capa no afectan directamente a las otras</li>
+                        <li><strong>Seguridad:</strong> Autenticación JWT en capa de negocio</li>
+                    </ul>
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('arquitectura')">📥 Descargar PNG</button>
+            </div>
+            
+            <!-- Diagrama Entidad-Relación -->
+            <div id="er" class="diagram-section">
+                <div class="diagram-header">
+                    <h2>Diagrama Entidad-Relación (ER)</h2>
+                    <p>Modelo de datos completo mostrando las relaciones entre las entidades del sistema: Roles, Usuarios, Vehículos, Rutas y Paradas.</p>
+                </div>
+                
+                <div class="diagram-container">
+                    <div class="mermaid">
+erDiagram
+    ROLES ||--o{ USUARIOS : tiene
+    USUARIOS ||--o{ VEHICULOS : "conduce (conductor)"
+    USUARIOS ||--o{ RUTAS : "solicita (cliente)"
+    USUARIOS ||--o{ RUTAS : "conduce (conductor)"
+    VEHICULOS ||--o{ RUTAS : asignado
+    RUTAS ||--o{ RUTAS_PARADAS : contiene
+    
+    ROLES {
+        int id PK
+        string nombre UK
+        text descripcion
+    }
+    
+    USUARIOS {
+        int id PK
+        int rol_id FK
+        string email UK
+        string password
+        string nombre_completo
+        string telefono
+        text direccion
+    }
+    
+    VEHICULOS {
+        int id PK
+        string placa UK
+        string marca
+        string modelo
+        int anio
+        decimal capacidad_kg
+        decimal volumen_m3
+        string estado
+        int conductor_id FK
+    }
+    
+    RUTAS {
+        int id PK
+        string codigo UK
+        string nombre
+        text descripcion
+        string estado
+        int prioridad
+        date fecha_programada
+        time hora_inicio
+        time hora_fin
+        int cliente_id FK
+        int conductor_id FK
+        int vehiculo_id FK
+        json meta
+    }
+    
+    RUTAS_PARADAS {
+        int id PK
+        int ruta_id FK
+        int orden
+        text direccion
+        decimal latitud
+        decimal longitud
+        string estado
+    }
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h3>🔑 Relaciones Clave:</h3>
+                    <ul>
+                        <li><strong>ROLES → USUARIOS:</strong> 1:N - Un rol puede tener múltiples usuarios</li>
+                        <li><strong>USUARIOS → VEHICULOS:</strong> 1:N - Un conductor puede tener múltiples vehículos</li>
+                        <li><strong>USUARIOS → RUTAS:</strong> 1:N - Un cliente/conductor puede tener múltiples rutas</li>
+                        <li><strong>VEHICULOS → RUTAS:</strong> 1:N - Un vehículo puede estar en múltiples rutas</li>
+                        <li><strong>RUTAS → RUTAS_PARADAS:</strong> 1:N - Una ruta tiene múltiples paradas</li>
+                    </ul>
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('er')">📥 Descargar PNG</button>
+            </div>
+            
+            <!-- Diagrama de Clases -->
+            <div id="clases" class="diagram-section">
+                <div class="diagram-header">
+                    <h2>Diagrama de Clases UML</h2>
+                    <p>Estructura de clases del backend mostrando atributos, métodos y relaciones entre las entidades principales.</p>
+                </div>
+                
+                <div class="diagram-container">
+                    <div class="mermaid">
+classDiagram
+    class Usuario {
+        -int id
+        -int rol_id
+        -string email
+        -string password
+        -string nombre_completo
+        -string telefono
+        -string direccion
+        +__init__(email, password, rol_id)
+        +to_dict() dict
+        +check_password(password) bool
+        +set_password(password) void
+    }
+    
+    class Rol {
+        -int id
+        -string nombre
+        -string descripcion
+        +__init__(nombre)
+        +to_dict() dict
+    }
+    
+    class Vehiculo {
+        -int id
+        -string placa
+        -string marca
+        -string modelo
+        -int anio
+        -decimal capacidad_kg
+        -decimal volumen_m3
+        -string estado
+        -int conductor_id
+        +__init__(placa)
+        +asignar_conductor(conductor_id) void
+        +cambiar_estado(nuevo_estado) void
+        +to_dict() dict
+        +esta_disponible() bool
+    }
+    
+    class Ruta {
+        -int id
+        -string codigo
+        -string nombre
+        -string descripcion
+        -string estado
+        -int prioridad
+        -date fecha_programada
+        -time hora_inicio
+        -time hora_fin
+        -int cliente_id
+        -int conductor_id
+        -int vehiculo_id
+        -json meta
+        +__init__(codigo, nombre)
+        +asignar_recursos(cliente, conductor, vehiculo) void
+        +cambiar_estado(nuevo_estado) void
+        +agregar_parada(direccion, latitud, longitud) void
+        +to_dict() dict
+    }
+    
+    class RutaParada {
+        -int id
+        -int ruta_id
+        -int orden
+        -string direccion
+        -decimal latitud
+        -decimal longitud
+        -string estado
+        +__init__(ruta_id, direccion)
+        +actualizar_ubicacion(lat, lng) void
+        +to_dict() dict
+    }
+    
+    Rol "1" --> "*" Usuario : tiene
+    Usuario "1" --> "*" Vehiculo : conduce
+    Usuario "1" --> "*" Ruta : solicita (cliente)
+    Usuario "1" --> "*" Ruta : conduce (conductor)
+    Vehiculo "1" --> "*" Ruta : asignado
+    Ruta "1" --> "*" RutaParada : contiene
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h3>📋 Métodos Principales:</h3>
+                    <ul>
+                        <li><strong>Usuario:</strong> Autenticación, gestión de sesión, conversión a diccionario</li>
+                        <li><strong>Vehiculo:</strong> Asignación de conductor, cambio de estado, validación de disponibilidad</li>
+                        <li><strong>Ruta:</strong> Asignación de recursos, gestión de estado, manejo de paradas</li>
+                        <li><strong>RutaParada:</strong> Actualización de ubicación, control de orden</li>
+                    </ul>
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('clases')">📥 Descargar PNG</button>
+            </div>
+            
+            <!-- Diagrama de Secuencia 1 -->
+            <div id="secuencia1" class="diagram-section">
+                <div class="diagram-header">
+                    <h2>Diagrama de Secuencia - Crear Usuario</h2>
+                    <p>Flujo completo del proceso de creación de un nuevo usuario desde el frontend hasta la base de datos.</p>
+                </div>
+                
+                <div class="diagram-container">
+                    <div class="mermaid">
+sequenceDiagram
+    actor Admin as Administrador
+    participant UI as Frontend<br/>(Flutter)
+    participant API as Backend<br/>(Flask API)
+    participant DB as Base de Datos<br/>(MySQL)
+    
+    Admin->>UI: Clic en "Nuevo Usuario"
+    UI->>Admin: Muestra formulario
+    Admin->>UI: Llena datos y "Guardar"
+    
+    UI->>UI: Valida formulario
+    
+    UI->>API: POST /usuarios<br/>{email, password, rol_id, ...}
+    
+    API->>API: Valida datos
+    API->>DB: SELECT * FROM usuarios<br/>WHERE email = ?
+    DB-->>API: Resultado (vacío = OK)
+    
+    API->>API: Hash password<br/>(pbkdf2:sha256)
+    
+    API->>DB: INSERT INTO usuarios<br/>(email, password, rol_id, ...)
+    DB-->>API: ID generado
+    
+    API-->>UI: 201 Created<br/>{id: 4}
+    UI->>Admin: Mensaje "Usuario creado"
+    
+    UI->>API: GET /usuarios
+    API->>DB: SELECT * FROM usuarios<br/>JOIN roles
+    DB-->>API: Lista de usuarios
+    API-->>UI: 200 OK<br/>{data: [...]}
+    
+    UI->>Admin: Actualiza lista de usuarios
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h3>🔐 Seguridad en el Proceso:</h3>
+                    <ul>
+                        <li><strong>Validación frontend:</strong> Verifica formato de email y longitud de password</li>
+                        <li><strong>Validación backend:</strong> Comprueba email único en base de datos</li>
+                        <li><strong>Hash de password:</strong> Usa pbkdf2:sha256 para almacenar passwords seguros</li>
+                        <li><strong>Respuesta 409:</strong> Si el email ya existe, retorna error de conflicto</li>
+                    </ul>
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('secuencia1')">📥 Descargar PNG</button>
+            </div>
+            
+            <!-- Diagrama de Secuencia 2 -->
+            <div id="secuencia2" class="diagram-section">
+                <div class="diagram-header">
+                    <h2>Diagrama de Secuencia - Asignar Conductor a Vehículo</h2>
+                    <p>Proceso de asignación de un conductor a un vehículo específico con actualización en tiempo real.</p>
+                </div>
+                
+                <div class="diagram-container">
+                    <div class="mermaid">
+sequenceDiagram
+    actor Admin as Administrador
+    participant UI as Frontend<br/>(Flutter)
+    participant API as Backend<br/>(Flask API)
+    participant DB as Base de Datos<br/>(MySQL)
+    
+    Admin->>UI: Clic en editar vehículo
+    
+    UI->>API: GET /usuarios/rol/Conductor
+    API->>DB: SELECT * FROM usuarios<br/>WHERE rol_id = 3
+    DB-->>API: Lista de conductores
+    API-->>UI: 200 OK<br/>[{id, nombre_completo, ...}]
+    
+    UI->>Admin: Muestra dropdown con conductores
+    
+    Admin->>UI: Selecciona conductor
+    UI->>UI: _conductorId = 6
+    
+    Admin->>UI: Clic en "Guardar"
+    
+    UI->>API: PUT /vehiculos/1<br/>{conductor_id: 6}
+    
+    API->>DB: UPDATE vehiculos<br/>SET conductor_id = 6<br/>WHERE id = 1
+    DB-->>API: Affected rows: 1
+    
+    API-->>UI: 200 OK<br/>{ok: true}
+    
+    UI->>Admin: Mensaje "Vehículo actualizado"
+    
+    UI->>API: GET /vehiculos
+    API->>DB: SELECT v.*, u.nombre_completo<br/>FROM vehiculos v<br/>LEFT JOIN usuarios u
+    DB-->>API: Lista actualizada
+    API-->>UI: 200 OK<br/>{data: [...]}
+    
+    UI->>Admin: Actualiza lista<br/>mostrando conductor
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h3>✨ Características de la Asignación:</h3>
+                    <ul>
+                        <li><strong>Carga dinámica:</strong> Lista de conductores se obtiene del backend en tiempo real</li>
+                        <li><strong>Validación de FK:</strong> El conductor_id debe existir en la tabla usuarios</li>
+                        <li><strong>Actualización reactiva:</strong> La UI se actualiza inmediatamente después de guardar</li>
+                        <li><strong>Opción nula:</strong> Se puede dejar el vehículo sin conductor asignado</li>
+                    </ul>
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('secuencia2')">📥 Descargar PNG</button>
+            </div>
+            
+            <!-- Diagrama de Componentes -->
+            <div id="componentes" class="diagram-section">
+                <div class="diagram-header">
+                    <h2>Diagrama de Componentes</h2>
+                    <p>Vista de alto nivel de los componentes del sistema y sus interacciones.</p>
+                </div>
+                
+                <div class="diagram-container">
+                    <div class="mermaid">
+graph TB
+    subgraph Frontend["COMPONENTE FRONTEND (Flutter)"]
+        UI[UI Layer]
+        Service[Service Layer]
+        
+        subgraph "Páginas"
+            Login[Login Page]
+            Dashboard[Dashboard]
+            Usuarios[Usuarios CRUD]
+            Vehiculos[Vehículos CRUD]
+            Rutas[Rutas CRUD]
+        end
+        
+        subgraph "Servicios"
+            ApiService[Api.dart]
+            Session[Session Manager]
+        end
+        
+        UI --> Login
+        UI --> Dashboard
+        UI --> Usuarios
+        UI --> Vehiculos
+        UI --> Rutas
+        
+        Service --> ApiService
+        Service --> Session
+        
+        UI -.-> Service
+    end
+    
+    subgraph Backend["COMPONENTE BACKEND (Flask)"]
+        Controllers[Controllers]
+        Models[Models]
+        Extensions[Extensions]
+        
+        subgraph "Controladores"
+            Routes[routes.py]
+            Auth[auth.py]
+        end
+        
+        subgraph "Modelos ORM"
+            UsuarioModel[Usuario]
+            VehiculoModel[Vehiculo]
+            RutaModel[Ruta]
+        end
+        
+        subgraph "Extensiones"
+            DB[SQLAlchemy]
+            JWT[JWT Manager]
+            CORS[CORS]
+        end
+        
+        Controllers --> Routes
+        Controllers --> Auth
+        
+        Models --> UsuarioModel
+        Models --> VehiculoModel
+        Models --> RutaModel
+        
+        Extensions --> DB
+        Extensions --> JWT
+        Extensions --> CORS
+        
+        Routes -.-> Models
+        Routes -.-> Extensions
+    end
+    
+    subgraph Database["COMPONENTE BASE DE DATOS (MySQL)"]
+        Tables[Tablas]
+        
+        subgraph "Esquema tradex2"
+            TRoles[(roles)]
+            TUsuarios[(usuarios)]
+            TVehiculos[(vehiculos)]
+            TRutas[(rutas)]
+            TParadas[(rutas_paradas)]
+        end
+        
+        Tables --> TRoles
+        Tables --> TUsuarios
+        Tables --> TVehiculos
+        Tables --> TRutas
+        Tables --> TParadas
+    end
+    
+    ApiService -->|HTTP/JSON<br/>REST API| Routes
+    DB -->|SQL| Tables
+    
+    style Frontend fill:#667eea,stroke:#333,stroke-width:3px,color:#fff
+    style Backend fill:#2a5298,stroke:#333,stroke-width:3px,color:#fff
+    style Database fill:#28a745,stroke:#333,stroke-width:3px,color:#fff
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h3>🧩 Componentes del Sistema:</h3>
+                    <ul>
+                        <li><strong>Frontend:</strong> 5 páginas principales + servicio API + gestión de sesión</li>
+                        <li><strong>Backend:</strong> Controladores REST + Modelos ORM + Extensiones (DB, JWT, CORS)</li>
+                        <li><strong>Base de Datos:</strong> 5 tablas relacionadas con integridad referencial</li>
+                        <li><strong>Comunicación:</strong> HTTP/JSON entre capas, SQL ORM para persistencia</li>
+                    </ul>
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('componentes')">📥 Descargar PNG</button>
+            </div>
+            
+            <!-- Diagrama de Despliegue -->
+            <div id="despliegue" class="diagram-section">
+                <div class="diagram-header">
+                    <h2>Diagrama de Despliegue</h2>
+                    <p>Arquitectura física del sistema mostrando servidores, puertos y protocolos de comunicación.</p>
+                </div>
+                
+                <div class="diagram-container">
+                    <div class="mermaid">
+graph TB
+    subgraph Cliente["MÁQUINA CLIENTE"]
+        Browser[Navegador Web<br/>Chrome/Firefox/Edge]
+        
+        subgraph FlutterApp["Aplicación Flutter Web"]
+            HTML[HTML/CSS/JavaScript]
+            WASM[WebAssembly - Dart]
+            FlutterUI[Componentes Flutter]
+        end
+        
+        Browser --> FlutterApp
+        FlutterApp --> HTML
+        FlutterApp --> WASM
+        FlutterApp --> FlutterUI
+    end
+    
+    subgraph Servidor["SERVIDOR DE APLICACIÓN<br/>localhost / 127.0.0.1"]
+        subgraph FlaskServer["Flask Application Server<br/>Puerto 5000"]
+            RestAPI[API REST]
+            JWTAuth[Autenticación JWT]
+            Business[Lógica de Negocio]
+            Validation[Validaciones]
+        end
+        
+        subgraph MySQLServer["MySQL Server - XAMPP<br/>Puerto 3306"]
+            DBTradex[(Database: tradex2)]
+            
+            subgraph Tables["Tablas"]
+                T1[(roles)]
+                T2[(usuarios)]
+                T3[(vehiculos)]
+                T4[(rutas)]
+                T5[(rutas_paradas)]
+            end
+            
+            DBTradex --> Tables
+            Tables --> T1
+            Tables --> T2
+            Tables --> T3
+            Tables --> T4
+            Tables --> T5
+        end
+        
+        FlaskServer --> RestAPI
+        FlaskServer --> JWTAuth
+        FlaskServer --> Business
+        FlaskServer --> Validation
+        
+        FlaskServer -->|SQLAlchemy ORM<br/>pymysql driver| MySQLServer
+    end
+    
+    Browser -->|HTTP Request/Response<br/>JSON<br/>http://localhost:8080| FlaskServer
+    
+    style Cliente fill:#667eea,stroke:#333,stroke-width:3px,color:#fff
+    style Servidor fill:#2a5298,stroke:#333,stroke-width:3px,color:#fff
+    style FlaskServer fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
+    style MySQLServer fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h3>🌐 Configuración de Despliegue:</h3>
+                    <ul>
+                        <li><strong>Cliente:</strong> Navegador web accediendo a http://localhost:8080</li>
+                        <li><strong>Frontend:</strong> Flutter Web compilado a HTML/CSS/JS + WebAssembly</li>
+                        <li><strong>Backend:</strong> Flask en http://127.0.0.1:5000 con modo debug</li>
+                        <li><strong>Base de Datos:</strong> MySQL XAMPP en puerto 3306 (usuario: root, password: 041124)</li>
+                        <li><strong>Protocolos:</strong> HTTP/JSON para API, SQLAlchemy ORM para BD</li>
+                    </ul>
+                </div>
+                
+                <button class="download-btn" onclick="downloadDiagram('despliegue')">📥 Descargar PNG</button>
+            </div>
+        </div>
+        
+        <footer>
+            <p><strong>Sistema TRADEX</strong> - Documentación Técnica</p>
+            <p>Versión 1.0 | Noviembre 2025</p>
+            <p style="margin-top: 10px; opacity: 0.8;">
+                Generado con Mermaid.js | Todos los diagramas son exportables a PNG
+            </p>
+        </footer>
+    </div>
+    
+    <script>
+        // Inicializar Mermaid
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            sequence: {
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35
+            }
+        });
+        
+        // Función para cambiar entre diagramas
+        function showDiagram(diagramId) {
+            // Ocultar todos los diagramas
+            const sections = document.querySelectorAll('.diagram-section');
+            sections.forEach(section => section.classList.remove('active'));
+            
+            // Remover clase active de todos los tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Mostrar el diagrama seleccionado
+            document.getElementById(diagramId).classList.add('active');
+            
+            // Activar el tab correspondiente
+            event.target.classList.add('active');
+        }
+        
+        // Función para descargar diagrama como PNG
+        function downloadDiagram(diagramId) {
+            const section = document.getElementById(diagramId);
+            const svg = section.querySelector('.mermaid svg');
+            
+            if (!svg) {
+                alert('Error: No se encontró el diagrama. Intenta recargar la página.');
+                return;
+            }
+            
+            // Crear canvas
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Obtener dimensiones del SVG
+            const bbox = svg.getBBox();
+            const padding = 40;
+            canvas.width = bbox.width + (padding * 2);
+            canvas.height = bbox.height + (padding * 2);
+            
+            // Fondo blanco
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Convertir SVG a imagen
+            const data = new XMLSerializer().serializeToString(svg);
+            const img = new Image();
+            const svgBlob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+            
+            img.onload = function() {
+                ctx.drawImage(img, padding, padding);
+                
+                // Descargar como PNG
+                canvas.toBlob(function(blob) {
+                    const link = document.createElement('a');
+                    link.download = `TRADEX_${diagramId}_${new Date().getTime()}.png`;
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                    URL.revokeObjectURL(url);
+                });
+            };
+            
+            img.src = url;
+        }
+        
+        // Mensaje de bienvenida en consola
+        console.log('%c📊 Diagramas TRADEX cargados correctamente', 'color: #667eea; font-size: 16px; font-weight: bold;');
+        console.log('%cHaz clic en "Descargar PNG" para exportar cualquier diagrama', 'color: #28a745; font-size: 12px;');
+    </script>
+</body>
+</html>

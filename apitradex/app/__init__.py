@@ -1,37 +1,36 @@
 # __init__.py
+import os
 from flask import Flask
 from flask_cors import CORS
+from dotenv import load_dotenv
 from .extensions import init_extensions, db
 from .routes import bp as api_bp
 from .models import Rol
+
+# Cargar variables de entorno
+load_dotenv()
 
 def create_app():
     app = Flask(__name__)
 
     # -------------------------------
-    # CONEXIÓN A MySQL (XAMPP)
+    # CONFIGURACIÓN DESDE VARIABLES DE ENTORNO
     # -------------------------------
-    # Opción 1: usando usuario root SIN contraseña (típico en XAMPP recién instalado)
-    app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root@localhost:3306/tradex2"
-
-    # Si creaste un usuario propio, por ejemplo:
-    #   usuario: tradex
-    #   contraseña: 123456
-    # usa esto en vez de lo de arriba:
-    # app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://tradex:123456@localhost:3306/logistica"
-
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+        "DATABASE_URL",
+        "mysql+pymysql://root:041124@localhost:3306/tradex2"  # Fallback para desarrollo
+    )
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Inicializa extensiones (db, etc.)
     init_extensions(app)
 
-    # CORS: permite front en localhost/127.0.0.1 (cubre Flutter web dev)
+    # CORS desde variable de entorno
+    cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:*,http://127.0.0.1:*").split(",")
     CORS(
         app,
-        resources={r"/api/*": {"origins": [
-            "http://localhost:*",
-            "http://127.0.0.1:*"
-        ]}},
+        resources={r"/api/*": {"origins": cors_origins}},
         supports_credentials=False,
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization"]

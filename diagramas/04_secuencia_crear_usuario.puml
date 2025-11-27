@@ -1,0 +1,82 @@
+@startuml Secuencia_Crear_Usuario
+!theme cerulean-outline
+title Diagrama de Secuencia - Crear Usuario
+
+actor Administrador as admin
+participant "Frontend\n(Flutter)" as ui
+participant "Backend\n(Flask API)" as api
+database "Base de Datos\n(MySQL)" as db
+
+admin -> ui : Clic en "Nuevo Usuario"
+activate ui
+
+ui -> admin : Muestra formulario
+admin -> ui : Llena datos y "Guardar"\n{email, password, rol_id, ...}
+
+ui -> ui : Valida formulario\n(frontend)
+activate ui
+deactivate ui
+
+ui -> api : POST /usuarios\n{email, password, rol_id, ...}
+activate api
+
+api -> api : Valida datos\n(backend)
+activate api
+deactivate api
+
+api -> db : SELECT * FROM usuarios\nWHERE email = ?
+activate db
+db --> api : Resultado (vacío = OK)
+deactivate db
+
+alt Email ya existe
+    api --> ui : 409 Conflict\n{error: "Email ya existe"}
+    ui -> admin : Muestra error
+else Email disponible
+    api -> api : Hash password\n(pbkdf2:sha256)
+    activate api
+    deactivate api
+    
+    api -> db : INSERT INTO usuarios\n(email, password, rol_id, ...)
+    activate db
+    db --> api : ID generado (ej: 4)
+    deactivate db
+    
+    api --> ui : 201 Created\n{id: 4}
+    deactivate api
+    
+    ui -> admin : Mensaje "Usuario creado"
+    
+    ui -> api : GET /usuarios\n(actualizar lista)
+    activate api
+    
+    api -> db : SELECT u.*, r.nombre as rol\nFROM usuarios u\nJOIN roles r
+    activate db
+    db --> api : Lista de usuarios
+    deactivate db
+    
+    api --> ui : 200 OK\n{data: [...]}
+    deactivate api
+    
+    ui -> admin : Actualiza lista de usuarios
+end
+
+deactivate ui
+
+note over api
+  **Validaciones Backend:**
+  • Email único
+  • Formato de email válido
+  • Password mínimo 6 caracteres
+  • rol_id debe existir en tabla roles
+end note
+
+note over ui
+  **Validaciones Frontend:**
+  • Campos obligatorios
+  • Formato de email
+  • Longitud de password
+  • Selección de rol
+end note
+
+@enduml

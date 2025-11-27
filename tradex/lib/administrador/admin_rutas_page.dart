@@ -1,30 +1,6 @@
-// Archivo: lib/administrador/admin_rutas_page.dart
-
 import 'package:flutter/material.dart';
 import 'sidebar_admin.dart';
 import 'package:tradex_web/services/api.dart';
-import 'package:tradex_web/session.dart';
-
-/// Modelo simple de ruta para el admin
-class _RutaAdmin {
-  final int id;
-  final String codigo;
-  final String nombre;
-  final String cliente;
-  final String estado;
-  final String? conductor;
-  final String? vehiculo;
-
-  _RutaAdmin({
-    required this.id,
-    required this.codigo,
-    required this.nombre,
-    required this.cliente,
-    required this.estado,
-    this.conductor,
-    this.vehiculo,
-  });
-}
 
 class AdminRutasPage extends StatefulWidget {
   const AdminRutasPage({super.key});
@@ -35,8 +11,7 @@ class AdminRutasPage extends StatefulWidget {
 
 class _AdminRutasPageState extends State<AdminRutasPage> {
   bool _cargando = false;
-  List<_RutaAdmin> _rutas = [];
-  String? _filtroEstado; // planificada/en_progreso/completada/cancelada
+  List<Map<String, dynamic>> _rutas = [];
 
   @override
   void initState() {
@@ -47,51 +22,65 @@ class _AdminRutasPageState extends State<AdminRutasPage> {
   Future<void> _cargarRutas() async {
     setState(() => _cargando = true);
     try {
-      final resp = await Api.listarRutasAdmin(
-        estado: _filtroEstado,
-        perPage: 200,
-        page: 1,
-      );
-      final data = (resp['data'] ?? []) as List;
-
-      _rutas = data.map<_RutaAdmin>((raw) {
-        final m = (raw as Map).cast<String, dynamic>();
-        return _RutaAdmin(
-          id: (m['id'] as num).toInt(),
-          codigo: m['codigo']?.toString() ?? '',
-          nombre: m['nombre']?.toString() ?? '',
-          cliente: m['cliente_nombre']?.toString() ?? '-',
-          estado: m['estado']?.toString() ?? '',
-          conductor: m['conductor_nombre']?.toString(),
-          vehiculo: m['vehiculo_id'] != null
-              ? m['vehiculo_id'].toString()
-              : null,
-        );
-      }).toList();
-
+      final resp = await Api.listarRutasAdmin(perPage: 200);
+      _rutas = ((resp['data'] ?? []) as List)
+          .cast<Map>()
+          .map((e) => e.cast<String, dynamic>())
+          .toList();
       if (mounted) setState(() {});
-    } on ApiError catch (e) {
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar rutas: ${e.message}')),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudieron cargar las rutas')),
+        SnackBar(content: Text('Error: $e')),
       );
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
   }
 
-  Future<void> _abrirAsignarConductor(_RutaAdmin ruta) async {
-    final ok = await showDialog<bool>(
+  Future<void> _eliminarRuta(int id, String codigo) async {
+    final confirmar = await showDialog<bool>(
       context: context,
-      builder: (_) => _AsignarConductorDialog(ruta: ruta),
+      builder: (_) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content: Text('¿Eliminar ruta $codigo?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
     );
-    if (ok == true) {
-      await _cargarRutas();
+    if (confirmar != true) return;
+
+    try {
+      await Api.eliminarRuta(id);
+      _cargarRutas();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ruta eliminada')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+  Future<void> _mostrarFormulario({Map<String, dynamic>? ruta}) async {
+    final resultado = await showDialog<bool>(
+      context: context,
+      builder: (_) => _FormularioRuta(ruta: ruta),
+    );
+    if (resultado == true) {
+      _cargarRutas();
     }
   }
 
@@ -108,66 +97,40 @@ class _AdminRutasPageState extends State<AdminRutasPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Gestión de rutas',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Rutas solicitadas por los clientes',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Filtros
                   Row(
                     children: [
-                      DropdownButton<String>(
-                        value: _filtroEstado,
-                        hint: const Text('Filtrar por estado'),
-                        items: const [
-                          DropdownMenuItem(
-                              value: 'planificada',
-                              child: Text('Planificada')),
-                          DropdownMenuItem(
-                              value: 'en_progreso',
-                              child: Text('En progreso')),
-                          DropdownMenuItem(
-                              value: 'completada',
-                              child: Text('Completada')),
-                          DropdownMenuItem(
-                              value: 'cancelada',
-                              child: Text('Cancelada')),
-                        ],
-                        onChanged: (v) {
-                          setState(() => _filtroEstado = v);
-                          _cargarRutas();
-                        },
-                      ),
-                      const SizedBox(width: 12),
-                      OutlinedButton.icon(
-                        onPressed: _cargarRutas,
-                        icon: _cargando
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.refresh),
-                        label: const Text('Actualizar'),
-                      ),
-                      if (_filtroEstado != null)
-                        TextButton(
-                          onPressed: () {
-                            setState(() => _filtroEstado = null);
-                            _cargarRutas();
-                          },
-                          child: const Text('Quitar filtro'),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Gestión de rutas',
+                                style:
+                                    Theme.of(context).textTheme.headlineMedium),
+                            const SizedBox(height: 4),
+                            const Text('Administrar rutas y asignaciones',
+                                style: TextStyle(color: Colors.grey)),
+                          ],
                         ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () => _mostrarFormulario(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Nueva Ruta'),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
-
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        onPressed: _cargarRutas,
+                        tooltip: 'Actualizar',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   Expanded(
                     child: Card(
                       shape: RoundedRectangleBorder(
@@ -178,84 +141,66 @@ class _AdminRutasPageState extends State<AdminRutasPage> {
                           ? const Center(child: CircularProgressIndicator())
                           : _rutas.isEmpty
                               ? const Center(child: Text('Sin rutas'))
-                              : Column(
-                                  children: [
-                                    // Cabecera de “tabla”
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
-                                      decoration: const BoxDecoration(
-                                        border: Border(
-                                          bottom:
-                                              BorderSide(color: kBordeSuave),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: const [
-                                          Expanded(
-                                            flex: 2,
-                                            child: Text('Código',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.w700)),
-                                          ),
-                                          Expanded(
-                                            flex: 3,
-                                            child: Text('Nombre',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.w700)),
-                                          ),
-                                          Expanded(
-                                            flex: 3,
-                                            child: Text('Cliente',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.w700)),
-                                          ),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Text('Estado',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.w700)),
-                                          ),
-                                          Expanded(
-                                            flex: 3,
-                                            child: Text('Conductor',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.w700)),
-                                          ),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Text('Vehículo',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.w700)),
-                                          ),
-                                          SizedBox(
-                                              width: 180, child: SizedBox()),
+                              : ListView.separated(
+                                  itemCount: _rutas.length,
+                                  separatorBuilder: (_, __) => const Divider(
+                                      height: 1, color: kBordeSuave),
+                                  itemBuilder: (context, index) {
+                                    final r = _rutas[index];
+                                    return ListTile(
+                                      title: Text(
+                                          '${r['codigo']} • ${r['nombre']}'),
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('Fecha: ${r['fecha_programada'] ?? 'N/A'} • Prioridad: ${r['prioridad'] ?? 'N/A'}'),
+                                          if (r['cliente_nombre'] != null)
+                                            Text('Cliente: ${r['cliente_nombre']}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                          if (r['conductor_nombre'] != null)
+                                            Text('Conductor: ${r['conductor_nombre']}', style: const TextStyle(fontSize: 12, color: Colors.blue)),
+                                          if (r['vehiculo_info'] != null)
+                                            Text('Vehículo: ${r['vehiculo_info']}', style: const TextStyle(fontSize: 12, color: Colors.green)),
                                         ],
                                       ),
-                                    ),
-                                    Expanded(
-                                      child: ListView.separated(
-                                        padding: const EdgeInsets.all(12),
-                                        itemCount: _rutas.length,
-                                        separatorBuilder: (_, __) =>
-                                            const Divider(color: kBordeSuave),
-                                        itemBuilder: (context, index) {
-                                          final r = _rutas[index];
-                                          return _RowRutaAdmin(
-                                            ruta: r,
-                                            onAsignar: () =>
-                                                _abrirAsignarConductor(r),
-                                          );
-                                        },
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 12, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: _colorEstado(r['estado'])
+                                                  .withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              r['estado'] ?? '',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                color: _colorEstado(r['estado']),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          IconButton(
+                                            icon: const Icon(Icons.edit,
+                                                size: 20),
+                                            onPressed: () =>
+                                                _mostrarFormulario(ruta: r),
+                                            tooltip: 'Editar',
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete,
+                                                size: 20, color: Colors.red),
+                                            onPressed: () =>
+                                                _eliminarRuta(r['id'], r['codigo']),
+                                            tooltip: 'Eliminar',
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ],
+                                    );
+                                  },
                                 ),
                     ),
                   ),
@@ -267,172 +212,159 @@ class _AdminRutasPageState extends State<AdminRutasPage> {
       ),
     );
   }
-}
 
-class _RowRutaAdmin extends StatelessWidget {
-  final _RutaAdmin ruta;
-  final VoidCallback onAsignar;
-
-  const _RowRutaAdmin({
-    required this.ruta,
-    required this.onAsignar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorEstado = (ruta.estado == 'completada')
-        ? kVerde
-        : (ruta.estado == 'cancelada')
-            ? Colors.red
-            : kTexto;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              ruta.codigo,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-          Expanded(flex: 3, child: Text(ruta.nombre)),
-          Expanded(flex: 3, child: Text(ruta.cliente)),
-          Expanded(
-            flex: 2,
-            child: Text(
-              ruta.estado,
-              style: TextStyle(
-                color: colorEstado,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(ruta.conductor ?? '-'),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(ruta.vehiculo ?? '-'),
-          ),
-          SizedBox(
-            width: 180,
-            child: ElevatedButton(
-              onPressed: onAsignar,
-              child: const Text('Asignar conductor'),
-            ),
-          ),
-        ],
-      ),
-    );
+  Color _colorEstado(String? estado) {
+    switch (estado) {
+      case 'pendiente':
+        return Colors.orange;
+      case 'en_curso':
+        return Colors.blue;
+      case 'completada':
+        return kVerde;
+      case 'cancelada':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 }
 
-/// Diálogo para asignar conductor y vehículo (conectado a la API)
-class _AsignarConductorDialog extends StatefulWidget {
-  final _RutaAdmin ruta;
-
-  const _AsignarConductorDialog({required this.ruta});
+class _FormularioRuta extends StatefulWidget {
+  final Map<String, dynamic>? ruta;
+  const _FormularioRuta({this.ruta});
 
   @override
-  State<_AsignarConductorDialog> createState() =>
-      _AsignarConductorDialogState();
+  State<_FormularioRuta> createState() => _FormularioRutaState();
 }
 
-class _AsignarConductorDialogState extends State<_AsignarConductorDialog> {
-  bool _cargandoConductores = false;
+class _FormularioRutaState extends State<_FormularioRuta> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _codigoCtrl;
+  late TextEditingController _nombreCtrl;
+  late TextEditingController _descripcionCtrl;
+  late TextEditingController _fechaCtrl;
+  late TextEditingController _horaInicioCtrl;
+  late TextEditingController _horaFinCtrl;
+  String _estado = 'pendiente';
+  String _prioridad = 'media';
   bool _guardando = false;
 
-  List<Map<String, dynamic>> _conductores = [];
+  // Nuevos campos para asignaciones
+  int? _clienteId;
   int? _conductorId;
-  Map<String, dynamic>? _vehiculo;
+  int? _vehiculoId;
+  List<Map<String, dynamic>> _clientes = [];
+  List<Map<String, dynamic>> _conductores = [];
+  List<Map<String, dynamic>> _vehiculos = [];
+  bool _cargandoDatos = true;
 
   @override
   void initState() {
     super.initState();
-    _cargarConductores();
+    final r = widget.ruta;
+    _codigoCtrl = TextEditingController(text: r?['codigo']?.toString() ?? '');
+    _nombreCtrl = TextEditingController(text: r?['nombre']?.toString() ?? '');
+    _descripcionCtrl = TextEditingController(text: r?['descripcion']?.toString() ?? '');
+    _fechaCtrl = TextEditingController(text: r?['fecha_programada']?.toString() ?? '');
+    _horaInicioCtrl = TextEditingController(text: r?['hora_inicio']?.toString() ?? '');
+    _horaFinCtrl = TextEditingController(text: r?['hora_fin']?.toString() ?? '');
+    
+    // Normalizar estado
+    final estadoRaw = r?['estado']?.toString() ?? 'pendiente';
+    final estadosValidos = ['pendiente', 'planificada', 'en_curso', 'completada', 'cancelada'];
+    _estado = estadosValidos.contains(estadoRaw) ? estadoRaw : 'pendiente';
+    
+    // Normalizar prioridad
+    final prioridadRaw = r?['prioridad']?.toString() ?? 'media';
+    final prioridadesValidas = ['baja', 'media', 'alta'];
+    _prioridad = prioridadesValidas.contains(prioridadRaw) ? prioridadRaw : 'media';
+    
+    // Inicializar IDs de asignaciones
+    _clienteId = r?['cliente_id'];
+    _conductorId = r?['conductor_id'];
+    _vehiculoId = r?['vehiculo_id'];
+    
+    _cargarDatosIniciales();
   }
 
-  Future<void> _cargarConductores() async {
-    setState(() => _cargandoConductores = true);
+  Future<void> _cargarDatosIniciales() async {
     try {
-      _conductores = await Api.listarUsuariosPorRol('Conductor');
-    } on ApiError catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar conductores: ${e.message}')),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudieron cargar los conductores')),
-      );
-    } finally {
-      if (mounted) setState(() => _cargandoConductores = false);
-    }
-  }
-
-  Future<void> _onSeleccionConductor(int? id) async {
-    setState(() {
-      _conductorId = id;
-      _vehiculo = null;
-    });
-    if (id == null) return;
-
-    try {
-      final v = await Api.obtenerVehiculoDeConductor(id);
+      final clientes = await Api.listarUsuariosPorRol('Cliente', perPage: 500);
+      final conductores = await Api.listarUsuariosPorRol('Conductor', perPage: 500);
+      final vehiculosResp = await Api.listarVehiculos(perPage: 500);
+      
+      _clientes = clientes.cast<Map>().map((e) => e.cast<String, dynamic>()).toList();
+      _conductores = conductores.cast<Map>().map((e) => e.cast<String, dynamic>()).toList();
+      _vehiculos = ((vehiculosResp['data'] ?? []) as List)
+          .cast<Map>()
+          .map((e) => e.cast<String, dynamic>())
+          .toList();
+          
       if (mounted) {
-        setState(() {
-          _vehiculo = v;
-        });
+        setState(() => _cargandoDatos = false);
       }
-    } on ApiError catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al obtener vehículo: ${e.message}')),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo obtener el vehículo')),
-      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _cargandoDatos = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error cargando datos: $e')),
+        );
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _codigoCtrl.dispose();
+    _nombreCtrl.dispose();
+    _descripcionCtrl.dispose();
+    _fechaCtrl.dispose();
+    _horaInicioCtrl.dispose();
+    _horaFinCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _guardar() async {
-    if (_conductorId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona un conductor')),
-      );
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _guardando = true);
     try {
-      final vehiculoId = (_vehiculo?['id'] as num?)?.toInt();
+      final data = <String, dynamic>{
+        'codigo': _codigoCtrl.text.trim(),
+        'nombre': _nombreCtrl.text.trim(),
+        if (_descripcionCtrl.text.isNotEmpty)
+          'descripcion': _descripcionCtrl.text.trim(),
+        'estado': _estado,
+        'prioridad': _prioridad,
+        if (_fechaCtrl.text.isNotEmpty)
+          'fecha_programada': _fechaCtrl.text.trim(),
+        if (_horaInicioCtrl.text.isNotEmpty)
+          'hora_inicio': _horaInicioCtrl.text.trim(),
+        if (_horaFinCtrl.text.isNotEmpty)
+          'hora_fin': _horaFinCtrl.text.trim(),
+        if (_clienteId != null) 'cliente_id': _clienteId,
+        if (_conductorId != null) 'conductor_id': _conductorId,
+        if (_vehiculoId != null) 'vehiculo_id': _vehiculoId,
+      };
 
-      await Api.asignarRuta(
-        rutaId: widget.ruta.id,
-        conductorId: _conductorId,
-        vehiculoId: vehiculoId,
-        asignadoPor: Session.userId,
-        comentario: 'Asignación desde panel administrador',
-      );
-
-      if (mounted) {
-        Navigator.of(context).pop(true);
+      if (widget.ruta == null) {
+        await Api.crearRutaConDatos(data);
+      } else {
+        await Api.actualizarRuta(widget.ruta!['id'], data);
       }
-    } on ApiError catch (e) {
+
       if (!mounted) return;
+      Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al asignar ruta: ${e.message}')),
+        SnackBar(
+            content: Text(widget.ruta == null
+                ? 'Ruta creada'
+                : 'Ruta actualizada')),
       );
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo asignar la ruta')),
+        SnackBar(content: Text('Error: $e')),
       );
     } finally {
       if (mounted) setState(() => _guardando = false);
@@ -442,95 +374,215 @@ class _AsignarConductorDialogState extends State<_AsignarConductorDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      insetPadding: const EdgeInsets.all(24),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 520),
+        constraints: const BoxConstraints(maxWidth: 600),
         child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Asignar conductor',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${widget.ruta.codigo} • ${widget.ruta.nombre}',
-                style: const TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 16),
-              if (_cargandoConductores) const LinearProgressIndicator(),
-              const SizedBox(height: 8),
-              Row(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
+                  Text(
+                    widget.ruta == null ? 'Nueva Ruta' : 'Editar Ruta',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _codigoCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Código *',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (v) =>
+                              v?.trim().isEmpty == true ? 'Requerido' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _nombreCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre *',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (v) =>
+                              v?.trim().isEmpty == true ? 'Requerido' : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descripcionCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Descripción',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 16),
+                  if (_cargandoDatos)
+                    const Center(child: CircularProgressIndicator())
+                  else ...[
+                    DropdownButtonFormField<int>(
+                      value: _clienteId,
+                      decoration: const InputDecoration(
+                        labelText: 'Cliente',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('Sin asignar')),
+                        ..._clientes.map((c) => DropdownMenuItem(
+                              value: c['id'],
+                              child: Text(c['nombre_completo'] ?? 'Sin nombre'),
+                            )),
+                      ],
+                      onChanged: (v) => setState(() => _clienteId = v),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<int>(
                       value: _conductorId,
-                      isDense: true,
                       decoration: const InputDecoration(
                         labelText: 'Conductor',
                         border: OutlineInputBorder(),
                       ),
-                      items: _cargandoConductores
-                          ? const []
-                          : _conductores
-                              .map(
-                                (c) => DropdownMenuItem<int>(
-                                  value: (c['id'] as num).toInt(),
-                                  child: Text(
-                                    c['nombre_completo']?.toString() ??
-                                        c['email']?.toString() ??
-                                        '#${c['id']}',
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                      onChanged: _onSeleccionConductor,
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('Sin asignar')),
+                        ..._conductores.map((c) => DropdownMenuItem(
+                              value: c['id'],
+                              child: Text(c['nombre_completo'] ?? 'Sin nombre'),
+                            )),
+                      ],
+                      onChanged: (v) => setState(() => _conductorId = v),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        labelText: 'Vehículo (asignado automáticamente)',
-                        border: const OutlineInputBorder(),
-                        hintText: _vehiculo == null
-                            ? 'Sin vehículo'
-                            : '${_vehiculo!['placa'] ?? 'placa'} • ${_vehiculo!['modelo'] ?? 'modelo'}',
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<int>(
+                      value: _vehiculoId,
+                      decoration: const InputDecoration(
+                        labelText: 'Vehículo',
+                        border: OutlineInputBorder(),
                       ),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('Sin asignar')),
+                        ..._vehiculos.map((v) => DropdownMenuItem(
+                              value: v['id'],
+                              child: Text('${v['placa']} - ${v['marca']} ${v['modelo']}'),
+                            )),
+                      ],
+                      onChanged: (v) => setState(() => _vehiculoId = v),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _estado,
+                          decoration: const InputDecoration(
+                            labelText: 'Estado',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                                value: 'pendiente', child: Text('Pendiente')),
+                            DropdownMenuItem(
+                                value: 'planificada', child: Text('Planificada')),
+                            DropdownMenuItem(
+                                value: 'en_curso', child: Text('En curso')),
+                            DropdownMenuItem(
+                                value: 'completada', child: Text('Completada')),
+                            DropdownMenuItem(
+                                value: 'cancelada', child: Text('Cancelada')),
+                          ],
+                          onChanged: (v) => setState(() => _estado = v!),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _prioridad,
+                          decoration: const InputDecoration(
+                            labelText: 'Prioridad',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                                value: 'baja', child: Text('Baja')),
+                            DropdownMenuItem(
+                                value: 'media', child: Text('Media')),
+                            DropdownMenuItem(
+                                value: 'alta', child: Text('Alta')),
+                          ],
+                          onChanged: (v) => setState(() => _prioridad = v!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _fechaCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Fecha programada (YYYY-MM-DD)',
+                      border: OutlineInputBorder(),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _horaInicioCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Hora inicio (HH:MM)',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _horaFinCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Hora fin (HH:MM)',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: _guardando
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: _guardando ? null : _guardar,
+                        child: _guardando
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('Guardar'),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed:
-                        _guardando ? null : () => Navigator.of(context).pop(),
-                    child: const Text('Cancelar'),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _guardando ? null : _guardar,
-                    child: _guardando
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text('Guardar'),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),

@@ -10,6 +10,22 @@ bp = Blueprint("api", __name__, url_prefix="/api")
 
 
 # ---------- Helpers ----------
+# Mapa de prioridad: string <-> int
+PRIORIDAD_STR_TO_INT = {'baja': 1, 'media': 2, 'alta': 3}
+PRIORIDAD_INT_TO_STR = {1: 'baja', 2: 'media', 3: 'alta'}
+
+def prioridad_to_int(valor):
+    """Convierte prioridad de string a int, o devuelve el int si ya lo es."""
+    if isinstance(valor, str):
+        return PRIORIDAD_STR_TO_INT.get(valor.lower(), 2)  # default: media=2
+    return int(valor) if valor else 2
+
+def prioridad_to_str(valor):
+    """Convierte prioridad de int a string."""
+    if isinstance(valor, str):
+        return valor.lower()
+    return PRIORIDAD_INT_TO_STR.get(int(valor) if valor else 2, 'media')
+
 def get_json():
     # Más tolerante frente a requests sin header o vacíos
     try:
@@ -56,6 +72,16 @@ def _nom_usuario(uid):
         return None
     u = Usuario.query.get(uid)
     return u.nombre_completo if u else None
+
+
+def _info_vehiculo(vid):
+    """Devuelve info básica del vehículo: placa, marca, modelo"""
+    if not vid:
+        return None
+    v = Vehiculo.query.get(vid)
+    if not v:
+        return None
+    return f"{v.placa} - {v.marca} {v.modelo}"
 
 
 # ---------- Error handler global (mejor traza en consola) ----------
@@ -187,6 +213,56 @@ def obtener_usuario(usuario_id):
     )
 
 
+@bp.route("/usuarios/<int:usuario_id>", methods=["PUT"])
+def actualizar_usuario(usuario_id):
+    u = Usuario.query.get(usuario_id)
+    if not u:
+        return jsonify(error="Usuario no existe"), 404
+    
+    data = get_json()
+    
+    # Actualizar campos básicos
+    if "nombre_completo" in data:
+        u.nombre_completo = data["nombre_completo"]
+    if "telefono" in data:
+        u.telefono = data["telefono"]
+    if "activo" in data:
+        u.activo = data["activo"]
+    
+    # Actualizar email (verificar que no exista)
+    if "email" in data:
+        email = data["email"].strip().lower()
+        if email != u.email:
+            if Usuario.query.filter_by(email=email).first():
+                return jsonify(error="Email ya registrado"), 409
+            u.email = email
+    
+    # Actualizar rol
+    if "rol" in data:
+        rol = Rol.query.filter_by(nombre=data["rol"]).first()
+        if not rol:
+            return jsonify(error="Rol inválido"), 400
+        u.role_id = rol.id
+    
+    # Actualizar contraseña (opcional)
+    if "password" in data and data["password"]:
+        u.password_hash = generate_password_hash(data["password"])
+    
+    db.session.commit()
+    return jsonify(ok=True, id=u.id)
+
+
+@bp.route("/usuarios/<int:usuario_id>", methods=["DELETE"])
+def eliminar_usuario(usuario_id):
+    u = Usuario.query.get(usuario_id)
+    if not u:
+        return jsonify(error="Usuario no existe"), 404
+    
+    db.session.delete(u)
+    db.session.commit()
+    return jsonify(ok=True)
+
+
 # ---------- Vehículos ----------
 @bp.route("/vehiculos", methods=["POST"])
 def crear_vehiculo():
@@ -244,6 +320,7 @@ def listar_vehiculos():
                 else None,
                 "estado": v.estado,
                 "conductor_id": v.conductor_id,
+                "conductor_nombre": _nom_usuario(v.conductor_id),
             }
         )
     return jsonify(
@@ -255,6 +332,74 @@ def listar_vehiculos():
             "pages": p.pages,
         }
     )
+
+
+@bp.route("/vehiculos/<int:vehiculo_id>", methods=["GET"])
+def obtener_vehiculo(vehiculo_id):
+    v = Vehiculo.query.get(vehiculo_id)
+    if not v:
+        return jsonify(error="Vehículo no existe"), 404
+    return jsonify(
+        {
+            "id": v.id,
+            "placa": v.placa,
+            "marca": v.marca,
+            "modelo": v.modelo,
+            "anio": v.anio,
+            "capacidad_kg": float(v.capacidad_kg) if v.capacidad_kg else None,
+            "volumen_m3": float(v.volumen_m3) if v.volumen_m3 else None,
+            "estado": v.estado,
+            "conductor_id": v.conductor_id,
+            "conductor_nombre": _nom_usuario(v.conductor_id),
+        }
+    )
+
+
+@bp.route("/vehiculos/<int:vehiculo_id>", methods=["PUT"])
+def actualizar_vehiculo(vehiculo_id):
+    v = Vehiculo.query.get(vehiculo_id)
+    if not v:
+        return jsonify(error="Vehículo no existe"), 404
+    
+    data = get_json()
+    
+    # Actualizar placa (verificar unicidad)
+    if "placa" in data:
+        placa = data["placa"].strip().upper()
+        if placa != v.placa:
+            if Vehiculo.query.filter_by(placa=placa).first():
+                return jsonify(error="Ya existe un vehículo con esa placa"), 409
+            v.placa = placa
+    
+    # Actualizar otros campos
+    if "marca" in data:
+        v.marca = data["marca"]
+    if "modelo" in data:
+        v.modelo = data["modelo"]
+    if "anio" in data:
+        v.anio = data["anio"]
+    if "capacidad_kg" in data:
+        v.capacidad_kg = data["capacidad_kg"]
+    if "volumen_m3" in data:
+        v.volumen_m3 = data["volumen_m3"]
+    if "estado" in data:
+        v.estado = data["estado"]
+    if "conductor_id" in data:
+        v.conductor_id = data["conductor_id"]
+    
+    db.session.commit()
+    return jsonify(ok=True, id=v.id)
+
+
+@bp.route("/vehiculos/<int:vehiculo_id>", methods=["DELETE"])
+def eliminar_vehiculo(vehiculo_id):
+    v = Vehiculo.query.get(vehiculo_id)
+    if not v:
+        return jsonify(error="Vehículo no existe"), 404
+    
+    db.session.delete(v)
+    db.session.commit()
+    return jsonify(ok=True)
 
 
 # ---------- Rutas ----------
@@ -303,7 +448,7 @@ def crear_ruta():
         descripcion=d.get("descripcion"),
         # Puedes mandar 'solicitada' desde el front si es un cliente
         estado=d.get("estado", "planificada"),
-        prioridad=d.get("prioridad", 3),
+        prioridad=prioridad_to_int(d.get("prioridad", 2)),
         fecha_programada=fecha_programada_val,  # date
         hora_inicio=hora_inicio_val,  # time
         hora_fin=hora_fin_val,  # time
@@ -346,7 +491,7 @@ def listar_rutas():
                 "nombre": r.nombre,
                 "descripcion": r.descripcion,
                 "estado": r.estado,
-                "prioridad": r.prioridad,
+                "prioridad": prioridad_to_str(r.prioridad),
                 "fecha_programada": r.fecha_programada.isoformat()
                 if r.fecha_programada
                 else None,
@@ -359,6 +504,7 @@ def listar_rutas():
                 "conductor_id": r.conductor_id,
                 "conductor_nombre": _nom_usuario(r.conductor_id),
                 "vehiculo_id": r.vehiculo_id,
+                "vehiculo_info": _info_vehiculo(r.vehiculo_id),
                 "meta": r.meta,
             }
         )
@@ -371,6 +517,106 @@ def listar_rutas():
             "pages": p.pages,
         }
     )
+
+
+@bp.route("/rutas/<int:ruta_id>", methods=["GET"])
+def obtener_ruta(ruta_id):
+    r = Ruta.query.get(ruta_id)
+    if not r:
+        return jsonify(error="Ruta no existe"), 404
+    
+    return jsonify(
+        {
+            "id": r.id,
+            "codigo": r.codigo,
+            "nombre": r.nombre,
+            "descripcion": r.descripcion,
+            "estado": r.estado,
+            "prioridad": prioridad_to_str(r.prioridad),
+            "fecha_programada": r.fecha_programada.isoformat() if r.fecha_programada else None,
+            "hora_inicio": r.hora_inicio.strftime("%H:%M") if r.hora_inicio else None,
+            "hora_fin": r.hora_fin.strftime("%H:%M") if r.hora_fin else None,
+            "cliente_id": r.cliente_id,
+            "cliente_nombre": _nom_usuario(r.cliente_id),
+            "conductor_id": r.conductor_id,
+            "conductor_nombre": _nom_usuario(r.conductor_id),
+            "vehiculo_id": r.vehiculo_id,
+            "vehiculo_info": _info_vehiculo(r.vehiculo_id),
+            "distancia_km": float(r.distancia_km) if r.distancia_km else None,
+            "duracion_estimada_min": r.duracion_estimada_min,
+            "meta": r.meta,
+        }
+    )
+
+
+@bp.route("/rutas/<int:ruta_id>", methods=["PUT"])
+def actualizar_ruta(ruta_id):
+    r = Ruta.query.get(ruta_id)
+    if not r:
+        return jsonify(error="Ruta no existe"), 404
+    
+    data = get_json()
+    
+    # Actualizar código (verificar unicidad)
+    if "codigo" in data and data["codigo"] != r.codigo:
+        if Ruta.query.filter_by(codigo=data["codigo"]).first():
+            return jsonify(error="Ya existe una ruta con ese código"), 409
+        r.codigo = data["codigo"]
+    
+    # Actualizar campos básicos
+    if "nombre" in data:
+        r.nombre = data["nombre"]
+    if "descripcion" in data:
+        r.descripcion = data["descripcion"]
+    if "estado" in data:
+        r.estado = data["estado"]
+    if "prioridad" in data:
+        r.prioridad = prioridad_to_int(data["prioridad"])
+    if "cliente_id" in data:
+        r.cliente_id = data["cliente_id"]
+    if "conductor_id" in data:
+        r.conductor_id = data["conductor_id"]
+    if "vehiculo_id" in data:
+        r.vehiculo_id = data["vehiculo_id"]
+    if "distancia_km" in data:
+        r.distancia_km = data["distancia_km"]
+    if "duracion_estimada_min" in data:
+        r.duracion_estimada_min = data["duracion_estimada_min"]
+    if "meta" in data:
+        r.meta = data["meta"]
+    
+    # Actualizar fecha y horas
+    if "fecha_programada" in data and data["fecha_programada"]:
+        try:
+            r.fecha_programada = datetime.strptime(data["fecha_programada"], "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify(error="fecha_programada debe tener formato YYYY-MM-DD"), 400
+    
+    if "hora_inicio" in data and data["hora_inicio"]:
+        try:
+            r.hora_inicio = datetime.strptime(data["hora_inicio"], "%H:%M").time()
+        except ValueError:
+            return jsonify(error="hora_inicio debe tener formato HH:mm"), 400
+    
+    if "hora_fin" in data and data["hora_fin"]:
+        try:
+            r.hora_fin = datetime.strptime(data["hora_fin"], "%H:%M").time()
+        except ValueError:
+            return jsonify(error="hora_fin debe tener formato HH:mm"), 400
+    
+    db.session.commit()
+    return jsonify(ok=True, id=r.id)
+
+
+@bp.route("/rutas/<int:ruta_id>", methods=["DELETE"])
+def eliminar_ruta(ruta_id):
+    r = Ruta.query.get(ruta_id)
+    if not r:
+        return jsonify(error="Ruta no existe"), 404
+    
+    db.session.delete(r)
+    db.session.commit()
+    return jsonify(ok=True)
 
 
 @bp.route("/rutas/<int:ruta_id>/paradas", methods=["POST"])

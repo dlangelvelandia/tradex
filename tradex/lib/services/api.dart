@@ -58,6 +58,47 @@ class Api {
         statusCode: res.statusCode);
   }
 
+  static Future<Map<String, dynamic>> _put(
+    String path,
+    Map<String, dynamic> body, {
+    Map<String, String>? headers,
+  }) async {
+    final uri = Uri.parse('$kApiBase$path');
+    final res = await http.put(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...?headers,
+      },
+      body: jsonEncode(body),
+    );
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return _normalizeToMap(res.body);
+    }
+    throw ApiError('PUT $path -> ${res.statusCode}: ${res.body}',
+        statusCode: res.statusCode);
+  }
+
+  static Future<Map<String, dynamic>> _delete(
+    String path, {
+    Map<String, String>? headers,
+  }) async {
+    final uri = Uri.parse('$kApiBase$path');
+    final res = await http.delete(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        ...?headers,
+      },
+    );
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return _normalizeToMap(res.body);
+    }
+    throw ApiError('DELETE $path -> ${res.statusCode}: ${res.body}',
+        statusCode: res.statusCode);
+  }
+
   // --- AUTH -----------------------------------------------------------
   static Future<Map<String, dynamic>> login({
     required String email,
@@ -93,6 +134,15 @@ class Api {
     });
     final list = (resp['data'] ?? []) as List;
     return list.cast<Map>().map((e) => e.cast<String, dynamic>()).toList();
+  }
+
+  static Future<Map<String, dynamic>> actualizarUsuario(
+      int id, Map<String, dynamic> data) {
+    return _put('/usuarios/$id', data);
+  }
+
+  static Future<Map<String, dynamic>> eliminarUsuario(int id) {
+    return _delete('/usuarios/$id');
   }
 
   // --- VEHÍCULOS ------------------------------------------------------
@@ -132,6 +182,15 @@ class Api {
     });
   }
 
+  static Future<Map<String, dynamic>> actualizarVehiculo(
+      int id, Map<String, dynamic> data) {
+    return _put('/vehiculos/$id', data);
+  }
+
+  static Future<Map<String, dynamic>> eliminarVehiculo(int id) {
+    return _delete('/vehiculos/$id');
+  }
+
   /// Helper: trae el primer vehículo asignado a un conductor (o null si no hay).
   static Future<Map<String, dynamic>?> obtenerVehiculoDeConductor(
       int conductorId) async {
@@ -169,6 +228,20 @@ class Api {
       if (vehiculoId != null) 'vehiculo_id': vehiculoId,
       if (meta != null) 'meta': meta,
     });
+  }
+
+  static Future<Map<String, dynamic>> crearRutaConDatos(
+      Map<String, dynamic> data) {
+    return _post('/rutas', data);
+  }
+
+  static Future<Map<String, dynamic>> actualizarRuta(
+      int id, Map<String, dynamic> data) {
+    return _put('/rutas/$id', data);
+  }
+
+  static Future<Map<String, dynamic>> eliminarRuta(int id) {
+    return _delete('/rutas/$id');
   }
 
   static Future<Map<String, dynamic>> agregarParada({

@@ -1,0 +1,56 @@
+@startuml Arquitectura_TRADEX
+!theme cerulean-outline
+title Arquitectura de Tres Capas - Sistema TRADEX
+
+package "CAPA DE PRESENTACIÓN" <<Cloud>> #LightBlue {
+    node "Flutter Web\n:8080" as Flutter {
+        component [Interfaz de Usuario] as UI
+        component [Validaciones Cliente] as ValClient
+        component [Gestión de Estado] as State
+    }
+}
+
+package "CAPA DE NEGOCIO" <<Node>> #LightGreen {
+    node "Flask API\n:5000" as Flask {
+        component [Endpoints REST] as REST
+        component [Autenticación JWT] as JWT
+        component [Validaciones] as Val
+        component [Lógica de Negocio] as Logic
+    }
+}
+
+package "CAPA DE PERSISTENCIA" <<Database>> #LightYellow {
+    database "MySQL\n:3306" as MySQL {
+        component [Database: tradex2] as DB
+        component [Integridad Referencial] as Integrity
+        component [Relaciones FK] as FK
+    }
+}
+
+Flutter -down-> Flask : HTTP/JSON\nREST API
+Flask -down-> MySQL : SQLAlchemy\nORM
+
+note right of Flutter
+  **Frontend:**
+  • Dart SDK 3.9.2
+  • HTTP Package 1.5.0
+  • Interfaz Responsiva
+end note
+
+note right of Flask
+  **Backend:**
+  • Flask 3.1.2
+  • SQLAlchemy 2.0.44
+  • PyMySQL 1.1.2
+  • Flask-CORS
+end note
+
+note right of MySQL
+  **Base de Datos:**
+  • MySQL 8.x (XAMPP)
+  • Usuario: root
+  • Database: tradex2
+  • 6 tablas relacionadas
+end note
+
+@enduml

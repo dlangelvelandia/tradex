@@ -539,7 +539,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           Expanded(
                             flex: 3,
                             child: Text(
-                              'Conductor (id)',
+                              'Conductor',
                               style: TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
@@ -554,7 +554,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   final modelo = (v['modelo'] ?? '').toString();
                   final anio = (v['anio'] ?? '').toString();
                   final estado = (v['estado'] ?? '').toString();
-                  final conductorId = v['conductor_id'];
+                  final conductorNombre = (v['conductor_nombre'] ?? '').toString();
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(
@@ -579,7 +579,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         Expanded(
                           flex: 3,
                           child: Text(
-                            conductorId == null ? '-' : '#$conductorId',
+                            conductorNombre.isEmpty ? '-' : conductorNombre,
                           ),
                         ),
                       ],
@@ -694,7 +694,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           Expanded(
                             flex: 2,
                             child: Text(
-                              'Vehículo (id)',
+                              'Vehículo',
                               style: TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
@@ -718,7 +718,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   final estado = (r['estado'] ?? '').toString();
                   final conductorNombre =
                       (r['conductor_nombre'] ?? '').toString();
-                  final vehiculoId = r['vehiculo_id'];
+                  final vehiculoInfo = (r['vehiculo_info'] ?? '').toString();
                   final conductorId = r['conductor_id'] as int?;
 
                   Color colorEstado;
@@ -773,7 +773,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         Expanded(
                           flex: 2,
                           child: Text(
-                            vehiculoId == null ? '-' : '#$vehiculoId',
+                            vehiculoInfo.isEmpty ? '-' : vehiculoInfo,
                           ),
                         ),
                         SizedBox(

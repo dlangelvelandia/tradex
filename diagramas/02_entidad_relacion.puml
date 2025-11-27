@@ -1,0 +1,111 @@
+@startuml Entidad_Relacion_TRADEX
+!theme cerulean-outline
+title Diagrama Entidad-Relación - Sistema TRADEX
+
+entity "ROLES" as roles {
+    * **id** : INT <<PK>>
+    --
+    * nombre : VARCHAR(50) <<UK>>
+    descripcion : TEXT
+}
+
+entity "USUARIOS" as usuarios {
+    * **id** : INT <<PK>>
+    --
+    * rol_id : INT <<FK>>
+    * email : VARCHAR(120) <<UK>>
+    * password : VARCHAR(255)
+    nombre_completo : VARCHAR(150)
+    telefono : VARCHAR(20)
+    direccion : TEXT
+}
+
+entity "VEHICULOS" as vehiculos {
+    * **id** : INT <<PK>>
+    --
+    * placa : VARCHAR(20) <<UK>>
+    marca : VARCHAR(50)
+    modelo : VARCHAR(50)
+    anio : INT
+    capacidad_kg : DECIMAL(10,2)
+    volumen_m3 : DECIMAL(10,2)
+    estado : VARCHAR(20)
+    conductor_id : INT <<FK>>
+}
+
+entity "RUTAS" as rutas {
+    * **id** : INT <<PK>>
+    --
+    * codigo : VARCHAR(50) <<UK>>
+    * nombre : VARCHAR(150)
+    descripcion : TEXT
+    estado : VARCHAR(20)
+    prioridad : INT
+    fecha_programada : DATE
+    hora_inicio : TIME
+    hora_fin : TIME
+    cliente_id : INT <<FK>>
+    conductor_id : INT <<FK>>
+    vehiculo_id : INT <<FK>>
+    meta : JSON
+}
+
+entity "RUTAS_PARADAS" as paradas {
+    * **id** : INT <<PK>>
+    --
+    * ruta_id : INT <<FK>>
+    * orden : INT
+    direccion : TEXT
+    latitud : DECIMAL(10,8)
+    longitud : DECIMAL(11,8)
+    estado : VARCHAR(20)
+}
+
+entity "RUTAS_ASIGNACIONES" as asignaciones {
+    * **id** : INT <<PK>>
+    --
+    * ruta_id : INT <<FK>>
+    * vehiculo_id : INT <<FK>>
+    * conductor_id : INT <<FK>>
+    fecha_asignacion : DATETIME
+}
+
+' Relaciones
+roles ||--o{ usuarios : "tiene"
+usuarios ||--o{ vehiculos : "conduce\n(conductor)"
+usuarios ||--o{ rutas : "solicita\n(cliente)"
+usuarios ||--o{ rutas : "conduce\n(conductor)"
+vehiculos ||--o{ rutas : "asignado a"
+rutas ||--o{ paradas : "contiene"
+rutas ||--o{ asignaciones : "tiene"
+vehiculos ||--o{ asignaciones : "asignado en"
+usuarios ||--o{ asignaciones : "conduce en"
+
+note top of roles
+  **Roles del Sistema:**
+  • Administrador (id=1)
+  • Cliente (id=2)
+  • Conductor (id=3)
+end note
+
+note bottom of vehiculos
+  **Estados válidos:**
+  • disponible
+  • en_ruta
+  • mantenimiento
+end note
+
+note bottom of rutas
+  **Estados válidos:**
+  • pendiente
+  • en_curso
+  • completada
+  • cancelada
+  
+  **Prioridad:**
+  • 1 = Baja
+  • 2 = Media
+  • 3 = Alta
+end note
+
+@enduml

@@ -1,0 +1,95 @@
+@startuml Diagrama_Despliegue_TRADEX
+!theme cerulean-outline
+title Diagrama de Despliegue - Sistema TRADEX
+
+node "MÁQUINA CLIENTE" <<device>> #LightBlue {
+    
+    artifact "Navegador Web" as browser <<Chrome/Firefox>> {
+        component [HTML/CSS/JavaScript] as html
+        component [WebAssembly (Dart)] as wasm
+        component [Flutter Web App] as flutter_app
+    }
+    
+    html -down-> flutter_app
+    wasm -down-> flutter_app
+}
+
+node "SERVIDOR DE APLICACIÓN\nlocalhost / 127.0.0.1" <<server>> #LightGreen {
+    
+    artifact "Flask Application\nPuerto 5000" as flask_server {
+        component [API REST] as rest_api
+        component [Autenticación JWT] as jwt_auth
+        component [Lógica de Negocio] as business_logic
+        component [Validaciones] as validations
+        component [SQLAlchemy ORM] as orm
+    }
+    
+    database "MySQL Server (XAMPP)\nPuerto 3306" as mysql_server <<Database>> #LightYellow {
+        storage "Database: tradex2" as db_tradex {
+            file roles
+            file usuarios
+            file vehiculos
+            file rutas
+            file rutas_paradas
+            file rutas_asignaciones
+        }
+    }
+    
+    rest_api -down-> business_logic
+    business_logic -down-> validations
+    validations -down-> orm
+    orm -down-> mysql_server : "pymysql driver"
+}
+
+' Conexiones
+browser --> flask_server : "HTTP Request/Response\nJSON\nhttp://localhost:8080"
+flutter_app --> rest_api : "API Calls"
+
+note top of browser
+  **Cliente:**
+  • Puerto: 8080
+  • Protocolo: HTTP
+  • Formato: JSON
+  • Tecnología: Flutter Web
+end note
+
+note top of flask_server
+  **Backend:**
+  • Puerto: 5000
+  • Framework: Flask 3.1.2
+  • ORM: SQLAlchemy 2.0.44
+  • Modo: Development (Debug)
+  • CORS: Habilitado
+end note
+
+note bottom of mysql_server
+  **Base de Datos:**
+  • Puerto: 3306
+  • Usuario: root
+  • Password: 041124
+  • Database: tradex2
+  • Engine: InnoDB
+  • Charset: utf8mb4
+end note
+
+note left of orm
+  **Configuración:**
+  DATABASE_URI =
+  mysql+pymysql://root:041124
+  @localhost:3306/tradex2
+end note
+
+legend right
+  |= Símbolo |= Descripción |
+  | <<device>> | Dispositivo Cliente |
+  | <<server>> | Servidor de Aplicación |
+  | <<Database>> | Servidor de Base de Datos |
+  
+  **Tecnologías:**
+  • Frontend: Flutter/Dart 3.9.2
+  • Backend: Python 3.x + Flask
+  • Database: MySQL 8.x
+  • Deployment: Local (XAMPP)
+endlegend
+
+@enduml

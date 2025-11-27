@@ -1,0 +1,142 @@
+@startuml Estados_Crear_Ruta
+!theme cerulean-outline
+title Diagrama de Estados - Crear Ruta
+
+[*] --> FormularioVacio : Administrador hace clic\n"Nueva Ruta"
+
+state "Formulario Vacío" as FormularioVacio {
+    state "Campos sin llenar" as CamposVacios
+    state "Dropdowns sin seleccionar" as DropdownsVacios
+}
+
+FormularioVacio --> CargandoDatos : Sistema carga\ndatos iniciales
+
+state "Cargando Datos" as CargandoDatos {
+    state "Cargando Clientes" as CargClientes
+    state "Cargando Conductores" as CargConductores
+    state "Cargando Vehículos" as CargVehiculos
+    
+    CargClientes --> CargConductores
+    CargConductores --> CargVehiculos
+}
+
+CargandoDatos --> FormularioListo : Datos cargados\nexitosamente
+
+state "Formulario Listo" as FormularioListo {
+    state "Ingresando datos" as IngresandoDatos {
+        state "Escribiendo código" as EscribiendoCodigo
+        state "Escribiendo nombre" as EscribiendoNombre
+        state "Seleccionando cliente" as SeleccionandoCliente
+        state "Seleccionando conductor" as SeleccionandoConductor
+        state "Seleccionando vehículo" as SeleccionandoVehiculo
+        state "Seleccionando prioridad" as SeleccionandoPrioridad
+        state "Ingresando fecha" as IngresandoFecha
+    }
+}
+
+FormularioListo --> ValidandoFormulario : Usuario hace clic\n"Guardar"
+
+state "Validando Formulario" as ValidandoFormulario {
+    state "Verificando campos obligatorios" as VerifObligatorios
+    state "Validando formato de datos" as ValidFormato
+}
+
+ValidandoFormulario --> ErrorValidacion : Validación\nfallida
+ValidandoFormulario --> EnviandoDatos : Validación\nexitosa
+
+state "Error de Validación" as ErrorValidacion {
+    state "Mostrando mensaje de error" as MostrandoError
+    state "Campo resaltado en rojo" as CampoRojo
+}
+
+ErrorValidacion --> FormularioListo : Usuario\ncorrige errores
+
+state "Enviando Datos" as EnviandoDatos {
+    state "POST /rutas en progreso" as POSTRutas
+    state "Esperando respuesta del servidor" as EsperandoResp
+}
+
+EnviandoDatos --> ValidandoBackend : Datos recibidos\npor el servidor
+
+state "Validando Backend" as ValidandoBackend {
+    state "Verificando código único" as VerifCodigoUnico
+    state "Validando prioridad" as ValidPrioridad
+    state "Validando relaciones FK" as ValidFK
+    state "Convirtiendo prioridad string→int" as ConvPrioridad
+}
+
+ValidandoBackend --> ErrorBackend : Código duplicado\no error de validación
+ValidandoBackend --> GuardandoBD : Validación backend\nexitosa
+
+state "Error Backend" as ErrorBackend {
+    state "409 Conflict - Código existe" as Error409
+    state "400 Bad Request - Datos inválidos" as Error400
+}
+
+ErrorBackend --> FormularioListo : Usuario ve error\ny corrige
+
+state "Guardando en BD" as GuardandoBD {
+    state "INSERT INTO rutas" as InsertRuta
+    state "Asignando cliente_id" as AsignCliente
+    state "Asignando conductor_id" as AsignConductor
+    state "Asignando vehiculo_id" as AsignVehiculo
+    state "Generando ID de ruta" as GenID
+    
+    InsertRuta --> AsignCliente
+    AsignCliente --> AsignConductor
+    AsignConductor --> AsignVehiculo
+    AsignVehiculo --> GenID
+}
+
+GuardandoBD --> ActualizandoEstados : Ruta creada\nexitosamente
+
+state "Actualizando Estados" as ActualizandoEstados {
+    state "Cambiando vehículo a 'en_ruta'" as CambVehiculo
+    state "Marcando conductor como ocupado" as MarcConductor
+}
+
+ActualizandoEstados --> RutaCreada : Actualización\ncompletada
+
+state "Ruta Creada" as RutaCreada {
+    state "Mostrando mensaje 'Ruta creada'" as MsgExito
+    state "Cerrando formulario" as CerrandoForm
+    state "Recargando lista de rutas" as RecargLista
+    
+    MsgExito --> CerrandoForm
+    CerrandoForm --> RecargLista
+}
+
+RutaCreada --> [*]
+
+note right of FormularioVacio
+  **Estado Inicial:**
+  • Todos los campos vacíos
+  • Dropdowns deshabilitados
+  • Botón "Guardar" inactivo
+end note
+
+note right of ValidandoFormulario
+  **Validaciones Frontend:**
+  • Código: obligatorio
+  • Nombre: obligatorio
+  • Prioridad: baja/media/alta
+  • Cliente/Conductor/Vehículo: opcionales
+end note
+
+note right of ValidandoBackend
+  **Validaciones Backend:**
+  • Código único en BD
+  • Prioridad válida (1, 2, 3)
+  • FK válidas (usuarios y vehículos existen)
+  • Conversión 'alta'→3, 'media'→2, 'baja'→1
+end note
+
+note right of GuardandoBD
+  **Persistencia:**
+  • Transacción atómica
+  • Relaciones establecidas
+  • ID auto-generado
+  • Estado inicial: 'pendiente'
+end note
+
+@enduml

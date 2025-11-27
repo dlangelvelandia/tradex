@@ -1,0 +1,196 @@
+@startuml Casos_de_Uso_Detallados_TRADEX
+!theme cerulean-outline
+title Casos de Uso Detallados - Operaciones Críticas del Sistema
+
+left to right direction
+
+actor "Administrador" as Admin #LightBlue
+actor "Sistema de BD" as DB #LightCoral
+actor "Servicio de Email" as Email #LightYellow
+
+rectangle "TRADEX - Sistema de Gestión Logística" {
+    
+    package "CU-01: Crear Ruta Completa" #LightBlue {
+        usecase (Crear Ruta) as CU01
+        usecase (Validar Código Único) as CU01A
+        usecase (Asignar Cliente) as CU01B
+        usecase (Asignar Conductor) as CU01C
+        usecase (Asignar Vehículo) as CU01D
+        usecase (Establecer Prioridad) as CU01E
+        usecase (Programar Fecha/Hora) as CU01F
+        usecase (Guardar en BD) as CU01G
+        usecase (Actualizar Estado Vehículo) as CU01H
+        usecase (Notificar Asignaciones) as CU01I
+    }
+    
+    package "CU-02: Gestionar Usuario" #LightGreen {
+        usecase (Crear Usuario) as CU02
+        usecase (Validar Email Único) as CU02A
+        usecase (Hashear Password) as CU02B
+        usecase (Asignar Rol) as CU02C
+        usecase (Guardar Usuario) as CU02D
+        usecase (Enviar Email Bienvenida) as CU02E
+    }
+    
+    package "CU-03: Asignar Conductor a Vehículo" #LightYellow {
+        usecase (Asignar Conductor) as CU03
+        usecase (Verificar Disponibilidad) as CU03A
+        usecase (Validar Rol Conductor) as CU03B
+        usecase (Actualizar Vehículo) as CU03C
+        usecase (Registrar Asignación) as CU03D
+    }
+    
+    package "CU-04: Iniciar Ruta" #LightCoral {
+        usecase (Iniciar Ruta) as CU04
+        usecase (Validar Recursos Asignados) as CU04A
+        usecase (Verificar Fecha Programada) as CU04B
+        usecase (Cambiar Estado a En Curso) as CU04C
+        usecase (Marcar Vehículo En Ruta) as CU04D
+        usecase (Activar Seguimiento) as CU04E
+        usecase (Notificar Cliente y Conductor) as CU04F
+    }
+    
+    package "CU-05: Completar Ruta" #Orange {
+        usecase (Completar Ruta) as CU05
+        usecase (Verificar Paradas Completadas) as CU05A
+        usecase (Cambiar Estado a Completada) as CU05B
+        usecase (Liberar Vehículo) as CU05C
+        usecase (Liberar Conductor) as CU05D
+        usecase (Generar Reporte) as CU05E
+        usecase (Notificar Cliente) as CU05F
+    }
+}
+
+' Relaciones CU-01: Crear Ruta
+Admin --> CU01
+CU01 ..> CU01A : <<include>>
+CU01 ..> CU01B : <<include>>
+CU01 ..> CU01C : <<include>>
+CU01 ..> CU01D : <<include>>
+CU01 ..> CU01E : <<extend>>
+CU01 ..> CU01F : <<extend>>
+CU01 ..> CU01G : <<include>>
+CU01G ..> CU01H : <<include>>
+CU01G ..> CU01I : <<extend>>
+
+CU01A --> DB
+CU01G --> DB
+CU01I --> Email
+
+' Relaciones CU-02: Crear Usuario
+Admin --> CU02
+CU02 ..> CU02A : <<include>>
+CU02 ..> CU02B : <<include>>
+CU02 ..> CU02C : <<include>>
+CU02 ..> CU02D : <<include>>
+CU02 ..> CU02E : <<extend>>
+
+CU02A --> DB
+CU02B --> DB
+CU02D --> DB
+CU02E --> Email
+
+' Relaciones CU-03: Asignar Conductor
+Admin --> CU03
+CU03 ..> CU03A : <<include>>
+CU03 ..> CU03B : <<include>>
+CU03 ..> CU03C : <<include>>
+CU03 ..> CU03D : <<extend>>
+
+CU03A --> DB
+CU03B --> DB
+CU03C --> DB
+CU03D --> DB
+
+' Relaciones CU-04: Iniciar Ruta
+Admin --> CU04
+CU04 ..> CU04A : <<include>>
+CU04 ..> CU04B : <<include>>
+CU04 ..> CU04C : <<include>>
+CU04 ..> CU04D : <<include>>
+CU04 ..> CU04E : <<extend>>
+CU04 ..> CU04F : <<extend>>
+
+CU04A --> DB
+CU04C --> DB
+CU04D --> DB
+CU04F --> Email
+
+' Relaciones CU-05: Completar Ruta
+Admin --> CU05
+CU05 ..> CU05A : <<include>>
+CU05 ..> CU05B : <<include>>
+CU05 ..> CU05C : <<include>>
+CU05 ..> CU05D : <<include>>
+CU05 ..> CU05E : <<extend>>
+CU05 ..> CU05F : <<extend>>
+
+CU05A --> DB
+CU05B --> DB
+CU05C --> DB
+CU05D --> DB
+CU05F --> Email
+
+note top of CU01
+  **Precondiciones:**
+  • Admin autenticado
+  • Al menos 1 cliente registrado
+  • Al menos 1 conductor disponible
+  • Al menos 1 vehículo disponible
+  
+  **Postcondiciones:**
+  • Ruta creada con estado 'pendiente'
+  • Vehículo marcado como 'reservado'
+  • Relaciones FK establecidas
+end note
+
+note bottom of CU02
+  **Flujo Principal:**
+  1. Admin ingresa datos del usuario
+  2. Sistema valida email único
+  3. Sistema hashea password (pbkdf2)
+  4. Admin selecciona rol
+  5. Sistema guarda en BD
+  6. (Opcional) Envía email bienvenida
+  
+  **Flujo Alternativo:**
+  • Si email existe → Error 409
+  • Si rol inválido → Error 400
+end note
+
+note top of CU04
+  **Validaciones Críticas:**
+  • Cliente asignado (cliente_id NOT NULL)
+  • Conductor asignado (conductor_id NOT NULL)
+  • Vehículo asignado (vehiculo_id NOT NULL)
+  • Vehículo.estado = 'disponible'
+  • Fecha programada <= Hoy
+  
+  **Resultado:**
+  • Ruta.estado = 'en_curso'
+  • Vehiculo.estado = 'en_ruta'
+end note
+
+note bottom of CU05
+  **Condiciones:**
+  • Todas las paradas marcadas completadas
+  • Conductor confirma finalización
+  
+  **Acciones:**
+  • Estado → 'completada'
+  • Vehículo → 'disponible'
+  • Conductor → libre
+  • Genera reporte PDF
+  • Notifica cliente por email
+end note
+
+legend right
+  |= Símbolo |= Significado |
+  | <<include>> | Relación obligatoria |
+  | <<extend>> | Relación opcional |
+  | Actor #LightBlue | Usuario del sistema |
+  | Actor #LightCoral | Sistema externo |
+  | Actor #LightYellow | Servicio externo |
+endlegend
+
+@enduml

@@ -1,0 +1,152 @@
+@startuml Estados_Asignar_Recursos_Ruta
+!theme cerulean-outline
+title Diagrama de Estados - Asignar Recursos a Ruta
+
+[*] --> SinAsignar : Ruta creada sin\nasignaciones completas
+
+state "Sin Asignar" as SinAsignar #LightGray {
+    state "Cliente: NULL" as ClienteNull
+    state "Conductor: NULL" as ConductorNull
+    state "Vehículo: NULL" as VehiculoNull
+}
+
+SinAsignar --> SeleccionandoCliente : Admin edita ruta\npara asignar cliente
+
+state "Seleccionando Cliente" as SeleccionandoCliente {
+    state "Cargando lista de clientes" as CargClientes {
+        state "GET /usuarios/rol/Cliente" as GetClientes
+        state "Mostrando dropdown" as DropClientes
+    }
+}
+
+SeleccionandoCliente --> ClienteAsignado : Admin selecciona\ncliente
+
+state "Cliente Asignado" as ClienteAsignado #LightYellow {
+    state "cliente_id: 2" as Cliente2
+    state "Conductor: NULL" as CondNull1
+    state "Vehículo: NULL" as VehNull1
+}
+
+ClienteAsignado --> SeleccionandoConductor : Admin asigna\nconductor
+
+state "Seleccionando Conductor" as SeleccionandoConductor {
+    state "Cargando conductores disponibles" as CargCond {
+        state "GET /usuarios/rol/Conductor" as GetCond
+        state "Filtrando disponibles" as FiltCond
+        state "Mostrando dropdown" as DropCond
+    }
+}
+
+SeleccionandoConductor --> ConductorAsignado : Admin selecciona\nconductor
+
+state "Conductor Asignado" as ConductorAsignado #LightBlue {
+    state "cliente_id: 2" as Cliente3
+    state "conductor_id: 6" as Conductor6
+    state "Vehículo: NULL" as VehNull2
+}
+
+ConductorAsignado --> SeleccionandoVehiculo : Admin asigna\nvehículo
+
+state "Seleccionando Vehículo" as SeleccionandoVehiculo {
+    state "Cargando vehículos" as CargVeh {
+        state "GET /vehiculos?estado=disponible" as GetVeh
+        state "Validando capacidad" as ValidCap
+        state "Mostrando dropdown" as DropVeh
+    }
+}
+
+SeleccionandoVehiculo --> ValidandoAsignacion : Admin selecciona\nvehículo
+
+state "Validando Asignación" as ValidandoAsignacion {
+    state "Verificando compatibilidad" as VerifCompat {
+        state "Conductor puede manejar vehículo" as CondPuedeVeh
+        state "Vehículo disponible en fecha" as VehDispFecha
+        state "Capacidad suficiente" as CapSuficiente
+    }
+}
+
+ValidandoAsignacion --> ErrorAsignacion : Validación\nfallida
+ValidandoAsignacion --> GuardandoAsignacion : Validación\nexitosa
+
+state "Error de Asignación" as ErrorAsignacion #LightCoral {
+    state "Vehículo no disponible" as VehNoDisp
+    state "Conductor ocupado" as CondOcupado
+    state "Incompatibilidad detectada" as Incompatible
+}
+
+ErrorAsignacion --> SeleccionandoVehiculo : Usuario selecciona\notro vehículo
+
+state "Guardando Asignación" as GuardandoAsignacion {
+    state "PUT /rutas/:id" as PutRuta {
+        state "Actualizando cliente_id" as UpdCliente
+        state "Actualizando conductor_id" as UpdConductor
+        state "Actualizando vehiculo_id" as UpdVehiculo
+    }
+    
+    state "Actualizando vehículo" as UpdVeh {
+        state "PUT /vehiculos/:id" as PutVeh
+        state "estado: 'reservado'" as EstadoReservado
+    }
+}
+
+GuardandoAsignacion --> TodoAsignado : Asignación\nguardada exitosamente
+
+state "Todo Asignado" as TodoAsignado #LightGreen {
+    state "cliente_id: 2 ✓" as ClienteFinal
+    state "conductor_id: 6 ✓" as ConductorFinal
+    state "vehiculo_id: 1 ✓" as VehiculoFinal
+    state "Ruta lista para iniciar" as RutaLista
+}
+
+TodoAsignado --> ConfirmandoAsignacion : Sistema\nverifica asignaciones
+
+state "Confirmando Asignación" as ConfirmandoAsignacion {
+    state "Creando registro en rutas_asignaciones" as CrearAsignacion {
+        state "INSERT INTO rutas_asignaciones" as InsertAsig
+        state "Guardando fecha_asignacion" as FechaAsig
+    }
+    
+    state "Actualizando dashboard" as UpdDashboard
+    state "Enviando notificación" as EnvNotif
+}
+
+ConfirmandoAsignacion --> [*] : Asignación completa\ny confirmada
+
+' Flujos alternativos
+ClienteAsignado --> SeleccionandoVehiculo : Admin salta\nasignación de conductor
+SinAsignar --> SeleccionandoVehiculo : Admin asigna\nvehículo primero
+
+note right of SinAsignar
+  **Estado Inicial:**
+  • Ruta creada sin asignaciones
+  • Solo tiene código y nombre
+  • No puede iniciarse hasta
+    tener asignaciones
+end note
+
+note right of ValidandoAsignacion
+  **Validaciones Críticas:**
+  • Vehículo.estado = 'disponible'
+  • Conductor sin rutas activas
+  • Fecha programada válida
+  • No hay conflictos de horario
+end note
+
+note right of GuardandoAsignacion
+  **Transacción Atómica:**
+  1. Actualizar ruta con IDs
+  2. Cambiar estado del vehículo
+  3. Registrar asignación
+  4. Commit o Rollback
+end note
+
+note right of TodoAsignado
+  **Estado Final:**
+  • Todas las FK establecidas
+  • Vehículo reservado
+  • Conductor notificado
+  • Cliente informado
+  • Ruta lista para estado 'en_curso'
+end note
+
+@enduml

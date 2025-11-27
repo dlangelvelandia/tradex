@@ -1,0 +1,197 @@
+@startuml Casos_de_Uso_TRADEX
+!theme cerulean-outline
+title Diagrama de Casos de Uso - Sistema TRADEX
+
+left to right direction
+
+actor "Administrador" as Admin #LightBlue
+actor "Cliente" as Cliente #LightGreen
+actor "Conductor" as Conductor #LightYellow
+
+rectangle "Sistema TRADEX" {
+    
+    package "Gestión de Autenticación" {
+        usecase (Iniciar Sesión) as UC01
+        usecase (Cerrar Sesión) as UC02
+        usecase (Recuperar Contraseña) as UC03
+    }
+    
+    package "Gestión de Usuarios" {
+        usecase (Crear Usuario) as UC04
+        usecase (Listar Usuarios) as UC05
+        usecase (Editar Usuario) as UC06
+        usecase (Eliminar Usuario) as UC07
+        usecase (Filtrar Usuarios por Rol) as UC08
+        usecase (Ver Perfil de Usuario) as UC09
+    }
+    
+    package "Gestión de Vehículos" {
+        usecase (Registrar Vehículo) as UC10
+        usecase (Listar Vehículos) as UC11
+        usecase (Editar Vehículo) as UC12
+        usecase (Eliminar Vehículo) as UC13
+        usecase (Asignar Conductor a Vehículo) as UC14
+        usecase (Cambiar Estado de Vehículo) as UC15
+        usecase (Ver Detalles de Vehículo) as UC16
+    }
+    
+    package "Gestión de Rutas" {
+        usecase (Crear Ruta) as UC17
+        usecase (Listar Rutas) as UC18
+        usecase (Editar Ruta) as UC19
+        usecase (Eliminar Ruta) as UC20
+        usecase (Asignar Cliente a Ruta) as UC21
+        usecase (Asignar Conductor a Ruta) as UC22
+        usecase (Asignar Vehículo a Ruta) as UC23
+        usecase (Cambiar Estado de Ruta) as UC24
+        usecase (Establecer Prioridad) as UC25
+        usecase (Programar Fecha y Hora) as UC26
+        usecase (Ver Detalles de Ruta) as UC27
+    }
+    
+    package "Gestión de Paradas" {
+        usecase (Agregar Parada a Ruta) as UC28
+        usecase (Eliminar Parada) as UC29
+        usecase (Reordenar Paradas) as UC30
+        usecase (Actualizar Estado de Parada) as UC31
+    }
+    
+    package "Consultas y Reportes" {
+        usecase (Ver Dashboard) as UC32
+        usecase (Consultar Rutas Asignadas) as UC33
+        usecase (Ver Historial de Rutas) as UC34
+        usecase (Consultar Vehículos Disponibles) as UC35
+        usecase (Ver Estadísticas) as UC36
+    }
+}
+
+' Relaciones Administrador
+Admin --> UC01
+Admin --> UC02
+Admin --> UC04
+Admin --> UC05
+Admin --> UC06
+Admin --> UC07
+Admin --> UC08
+Admin --> UC09
+
+Admin --> UC10
+Admin --> UC11
+Admin --> UC12
+Admin --> UC13
+Admin --> UC14
+Admin --> UC15
+Admin --> UC16
+
+Admin --> UC17
+Admin --> UC18
+Admin --> UC19
+Admin --> UC20
+Admin --> UC21
+Admin --> UC22
+Admin --> UC23
+Admin --> UC24
+Admin --> UC25
+Admin --> UC26
+Admin --> UC27
+
+Admin --> UC28
+Admin --> UC29
+Admin --> UC30
+Admin --> UC31
+
+Admin --> UC32
+Admin --> UC34
+Admin --> UC35
+Admin --> UC36
+
+' Relaciones Cliente
+Cliente --> UC01
+Cliente --> UC02
+Cliente --> UC09
+Cliente --> UC18
+Cliente --> UC27
+Cliente --> UC33
+Cliente --> UC34
+
+' Relaciones Conductor
+Conductor --> UC01
+Conductor --> UC02
+Conductor --> UC09
+Conductor --> UC16
+Conductor --> UC27
+Conductor --> UC31
+Conductor --> UC33
+
+' Relaciones Include
+UC04 ..> UC05 : <<include>>
+UC06 ..> UC09 : <<include>>
+UC10 ..> UC11 : <<include>>
+UC12 ..> UC16 : <<include>>
+UC17 ..> UC18 : <<include>>
+UC19 ..> UC27 : <<include>>
+
+UC17 ..> UC21 : <<include>>
+UC17 ..> UC22 : <<include>>
+UC17 ..> UC23 : <<include>>
+
+UC14 ..> UC15 : <<include>>
+UC24 ..> UC15 : <<include>>
+
+' Relaciones Extend
+UC08 ..> UC05 : <<extend>>
+UC25 ..> UC17 : <<extend>>
+UC26 ..> UC17 : <<extend>>
+UC28 ..> UC17 : <<extend>>
+
+UC35 ..> UC32 : <<extend>>
+UC36 ..> UC32 : <<extend>>
+
+note right of Admin
+  **Permisos Completos:**
+  • CRUD de todas las entidades
+  • Asignación de recursos
+  • Gestión de estados
+  • Acceso a reportes
+  • Administración total
+end note
+
+note bottom of Cliente
+  **Permisos Limitados:**
+  • Consultar sus rutas
+  • Ver detalles de rutas
+  • Ver historial
+  • No puede crear/editar
+end note
+
+note bottom of Conductor
+  **Permisos de Operación:**
+  • Ver rutas asignadas
+  • Actualizar estado de paradas
+  • Ver detalles de vehículo
+  • No puede crear rutas
+end note
+
+note top of UC17
+  **Caso de Uso Principal:**
+  Crear Ruta involucra
+  asignar Cliente, Conductor
+  y Vehículo en un solo proceso
+end note
+
+note bottom of UC14
+  **Validación:**
+  Solo conductores con
+  rol_id=3 pueden ser
+  asignados a vehículos
+end note
+
+note bottom of UC24
+  **Estados Válidos:**
+  • Pendiente
+  • En Curso
+  • Completada
+  • Cancelada
+end note
+
+@enduml

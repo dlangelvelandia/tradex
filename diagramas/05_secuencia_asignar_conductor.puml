@@ -1,0 +1,85 @@
+@startuml Secuencia_Asignar_Conductor
+!theme cerulean-outline
+title Diagrama de Secuencia - Asignar Conductor a Vehículo
+
+actor Administrador as admin
+participant "Frontend\n(Flutter)" as ui
+participant "Backend\n(Flask API)" as api
+database "Base de Datos\n(MySQL)" as db
+
+admin -> ui : Clic en editar vehículo
+activate ui
+
+ui -> api : GET /usuarios/rol/Conductor
+activate api
+
+api -> db : SELECT * FROM usuarios\nWHERE rol_id = 3
+activate db
+db --> api : Lista de conductores
+deactivate db
+
+api --> ui : 200 OK\n[{id, nombre_completo, ...}]
+deactivate api
+
+ui -> admin : Muestra dropdown\ncon conductores
+
+admin -> ui : Selecciona conductor
+ui -> ui : _conductorId = 6
+activate ui
+deactivate ui
+
+admin -> ui : Clic en "Guardar"
+
+ui -> api : PUT /vehiculos/1\n{conductor_id: 6}
+activate api
+
+api -> db : UPDATE vehiculos\nSET conductor_id = 6\nWHERE id = 1
+activate db
+db --> api : Affected rows: 1
+deactivate db
+
+api --> ui : 200 OK\n{ok: true}
+deactivate api
+
+ui -> admin : Mensaje "Vehículo actualizado"
+
+ui -> api : GET /vehiculos\n(actualizar lista)
+activate api
+
+api -> db : SELECT v.*, u.nombre_completo\nFROM vehiculos v\nLEFT JOIN usuarios u\nON v.conductor_id = u.id
+activate db
+db --> api : Lista de vehículos actualizada
+deactivate db
+
+api --> ui : 200 OK\n{data: [{..., conductor_nombre}, ...]}
+deactivate api
+
+ui -> admin : Actualiza lista\nmostrando conductor asignado
+
+deactivate ui
+
+note over ui
+  **Características Frontend:**
+  • Dropdown dinámico de conductores
+  • Opción "Sin asignar" (null)
+  • Validación de selección
+  • Actualización reactiva de UI
+end note
+
+note over api
+  **Validaciones Backend:**
+  • conductor_id debe existir
+  • Debe ser rol = 3 (Conductor)
+  • Permite NULL (sin asignar)
+  • Foreign Key constraint
+end note
+
+note over db
+  **Base de Datos:**
+  • LEFT JOIN para mostrar
+    vehículos sin conductor
+  • conductor_nombre calculado
+    dinámicamente
+end note
+
+@enduml

@@ -1,0 +1,106 @@
+@startuml Diagrama_Componentes_TRADEX
+!theme cerulean-outline
+title Diagrama de Componentes - Sistema TRADEX
+
+package "COMPONENTE FRONTEND (Flutter)" <<Cloud>> #LightBlue {
+    
+    package "UI Layer" {
+        component [Login Page] as login
+        component [Dashboard] as dashboard
+        component [Usuarios CRUD] as usuarios_ui
+        component [Vehículos CRUD] as vehiculos_ui
+        component [Rutas CRUD] as rutas_ui
+    }
+    
+    package "Service Layer" {
+        component [Api.dart] as api_service
+        component [Session Manager] as session
+    }
+    
+    login -down-> api_service
+    dashboard -down-> api_service
+    usuarios_ui -down-> api_service
+    vehiculos_ui -down-> api_service
+    rutas_ui -down-> api_service
+    
+    api_service -down-> session
+}
+
+package "COMPONENTE BACKEND (Flask)" <<Node>> #LightGreen {
+    
+    package "Controllers" {
+        component [routes.py] as routes
+        component [auth.py] as auth
+    }
+    
+    package "Models (ORM)" {
+        component [Usuario] as usuario_model
+        component [Vehiculo] as vehiculo_model
+        component [Ruta] as ruta_model
+        component [RutaParada] as parada_model
+    }
+    
+    package "Extensions" {
+        component [SQLAlchemy] as db
+        component [JWT Manager] as jwt
+        component [CORS] as cors
+    }
+    
+    routes -down-> usuario_model
+    routes -down-> vehiculo_model
+    routes -down-> ruta_model
+    routes -down-> parada_model
+    
+    routes -down-> db
+    routes -down-> jwt
+    routes -down-> cors
+    
+    auth -down-> usuario_model
+    auth -down-> jwt
+}
+
+package "COMPONENTE BASE DE DATOS (MySQL)" <<Database>> #LightYellow {
+    
+    database "tradex2" {
+        component [roles] as t_roles
+        component [usuarios] as t_usuarios
+        component [vehiculos] as t_vehiculos
+        component [rutas] as t_rutas
+        component [rutas_paradas] as t_paradas
+        component [rutas_asignaciones] as t_asignaciones
+    }
+}
+
+' Relaciones entre componentes
+api_service -down-> routes : HTTP/JSON\nREST API
+db -down-> t_usuarios : SQL\nQueries
+db -down-> t_vehiculos : SQL\nQueries
+db -down-> t_rutas : SQL\nQueries
+
+note right of api_service
+  **API Service:**
+  • baseUrl: localhost:5000
+  • Métodos CRUD para todas las entidades
+  • Manejo de headers JWT
+  • Gestión de errores HTTP
+end note
+
+note right of routes
+  **18 Endpoints REST:**
+  • POST /usuarios, /vehiculos, /rutas
+  • GET /usuarios, /vehiculos, /rutas
+  • PUT /usuarios/:id, /vehiculos/:id, /rutas/:id
+  • DELETE /usuarios/:id, /vehiculos/:id, /rutas/:id
+  • POST /auth/login
+  • Helpers: prioridad_to_int(), _nom_usuario()
+end note
+
+note right of db
+  **SQLAlchemy ORM:**
+  • Mapeo objeto-relacional
+  • Relaciones automáticas
+  • Query Builder
+  • Migrations
+end note
+
+@enduml

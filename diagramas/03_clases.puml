@@ -1,0 +1,126 @@
+@startuml Diagrama_Clases_TRADEX
+!theme cerulean-outline
+title Diagrama de Clases UML - Backend TRADEX
+
+class Rol {
+    - id : int
+    - nombre : string
+    - descripcion : string
+    --
+    + __init__(nombre : string)
+    + to_dict() : dict
+}
+
+class Usuario {
+    - id : int
+    - rol_id : int
+    - email : string
+    - password : string
+    - nombre_completo : string
+    - telefono : string
+    - direccion : string
+    --
+    + __init__(email, password, rol_id)
+    + to_dict() : dict
+    + check_password(password : string) : bool
+    + set_password(password : string) : void
+}
+
+class Vehiculo {
+    - id : int
+    - placa : string
+    - marca : string
+    - modelo : string
+    - anio : int
+    - capacidad_kg : decimal
+    - volumen_m3 : decimal
+    - estado : string
+    - conductor_id : int
+    --
+    + __init__(placa : string)
+    + asignar_conductor(conductor_id : int) : void
+    + cambiar_estado(nuevo_estado : string) : void
+    + esta_disponible() : bool
+    + to_dict() : dict
+}
+
+class Ruta {
+    - id : int
+    - codigo : string
+    - nombre : string
+    - descripcion : string
+    - estado : string
+    - prioridad : int
+    - fecha_programada : date
+    - hora_inicio : time
+    - hora_fin : time
+    - cliente_id : int
+    - conductor_id : int
+    - vehiculo_id : int
+    - meta : json
+    --
+    + __init__(codigo, nombre)
+    + asignar_recursos(cliente, conductor, vehiculo) : void
+    + cambiar_estado(nuevo_estado : string) : void
+    + agregar_parada(direccion, lat, lng) : void
+    + to_dict() : dict
+}
+
+class RutaParada {
+    - id : int
+    - ruta_id : int
+    - orden : int
+    - direccion : string
+    - latitud : decimal
+    - longitud : decimal
+    - estado : string
+    --
+    + __init__(ruta_id, direccion)
+    + actualizar_ubicacion(lat, lng) : void
+    + to_dict() : dict
+}
+
+class RutaAsignacion {
+    - id : int
+    - ruta_id : int
+    - vehiculo_id : int
+    - conductor_id : int
+    - fecha_asignacion : datetime
+    --
+    + __init__(ruta_id, vehiculo_id, conductor_id)
+    + to_dict() : dict
+}
+
+' Relaciones
+Rol "1" -- "0..*" Usuario : tiene >
+Usuario "1" -- "0..*" Vehiculo : conduce >
+Usuario "1" -- "0..*" Ruta : solicita (cliente) >
+Usuario "1" -- "0..*" Ruta : conduce (conductor) >
+Vehiculo "1" -- "0..*" Ruta : asignado a >
+Ruta "1" -- "0..*" RutaParada : contiene >
+Ruta "1" -- "0..*" RutaAsignacion : tiene >
+Vehiculo "1" -- "0..*" RutaAsignacion : usado en >
+Usuario "1" -- "0..*" RutaAsignacion : conduce en >
+
+note right of Usuario
+  **Métodos de Autenticación:**
+  • Hash password con pbkdf2:sha256
+  • Validación de credenciales
+  • Generación de token JWT
+end note
+
+note right of Vehiculo
+  **Validaciones:**
+  • Placa única (uppercase)
+  • Estados válidos
+  • Conductor debe ser rol=3
+end note
+
+note right of Ruta
+  **Conversión Prioridad:**
+  • 'baja' ↔ 1
+  • 'media' ↔ 2
+  • 'alta' ↔ 3
+end note
+
+@enduml

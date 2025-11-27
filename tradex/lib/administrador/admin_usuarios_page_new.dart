@@ -23,10 +23,11 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
   Future<void> _cargarUsuarios() async {
     setState(() => _cargando = true);
     try {
-      _usuarios = [];
       if (_filtroRol != null) {
         _usuarios = await Api.listarUsuariosPorRol(_filtroRol!, perPage: 200);
       } else {
+        // Cargar todos los usuarios
+        _usuarios = [];
         for (final rol in ['Admin', 'Cliente', 'Conductor']) {
           final lista = await Api.listarUsuariosPorRol(rol, perPage: 200);
           _usuarios.addAll(lista);
@@ -36,7 +37,7 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(content: Text('Error al cargar usuarios: $e')),
       );
     } finally {
       if (mounted) setState(() => _cargando = false);
@@ -50,10 +51,7 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
         title: const Text('Confirmar eliminación'),
         content: Text('¿Eliminar a $nombre?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -65,7 +63,12 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
     if (confirmar != true) return;
 
     try {
-      await Api.eliminarUsuario(id);
+      // Llamar endpoint DELETE (necesitas agregarlo en api.dart)
+      final uri = Uri.parse('http://localhost:5000/api/usuarios/$id');
+      final res = await http.delete(uri);
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw Exception('Error ${res.statusCode}');
+      }
       _cargarUsuarios();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -74,7 +77,7 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(content: Text('Error al eliminar: $e')),
       );
     }
   }
@@ -105,16 +108,9 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
                   Row(
                     children: [
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Gestión de usuarios',
-                                style:
-                                    Theme.of(context).textTheme.headlineMedium),
-                            const SizedBox(height: 4),
-                            const Text('Administrar usuarios del sistema',
-                                style: TextStyle(color: Colors.grey)),
-                          ],
+                        child: Text(
+                          'Gestión de usuarios',
+                          style: Theme.of(context).textTheme.headlineMedium,
                         ),
                       ),
                       ElevatedButton.icon(
@@ -124,15 +120,15 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Text('Filtrar: ',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(width: 8),
+                      const Text('Filtrar por rol:',
+                          style: TextStyle(color: Colors.grey)),
+                      const SizedBox(width: 12),
                       DropdownButton<String>(
                         value: _filtroRol,
-                        hint: const Text('Todos los roles'),
+                        hint: const Text('Todos'),
                         items: const [
                           DropdownMenuItem(
                               value: 'Admin', child: Text('Admin')),
@@ -146,16 +142,14 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
                           _cargarUsuarios();
                         },
                       ),
-                      if (_filtroRol != null) ...[
-                        const SizedBox(width: 8),
+                      if (_filtroRol != null)
                         TextButton(
                           onPressed: () {
                             setState(() => _filtroRol = null);
                             _cargarUsuarios();
                           },
-                          child: const Text('Limpiar'),
+                          child: const Text('Limpiar filtro'),
                         ),
-                      ],
                       const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.refresh),
@@ -182,8 +176,9 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
                                   itemBuilder: (context, index) {
                                     final u = _usuarios[index];
                                     return ListTile(
-                                      title: Text(u['nombre_completo'] ?? ''),
-                                      subtitle: Text(u['email'] ?? ''),
+                                      title:
+                                          Text('${u['nombre_completo'] ?? u['nombre']}'),
+                                      subtitle: Text('${u['email']}'),
                                       trailing: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
@@ -196,7 +191,7 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
                                                   BorderRadius.circular(12),
                                             ),
                                             child: Text(
-                                              u['rol_nombre'] ?? '',
+                                              '${u['rol_nombre'] ?? u['rol']}',
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.w600,
                                                 color: kNavy,
@@ -215,7 +210,9 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
                                             icon: const Icon(Icons.delete,
                                                 size: 20, color: Colors.red),
                                             onPressed: () => _eliminarUsuario(
-                                                u['id'], u['nombre_completo']),
+                                                u['id'],
+                                                u['nombre_completo'] ??
+                                                    u['nombre']),
                                             tooltip: 'Eliminar',
                                           ),
                                         ],
@@ -235,8 +232,10 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage> {
   }
 }
 
+// Formulario para crear/editar usuario
 class _FormularioUsuario extends StatefulWidget {
   final Map<String, dynamic>? usuario;
+
   const _FormularioUsuario({this.usuario});
 
   @override
@@ -256,11 +255,11 @@ class _FormularioUsuarioState extends State<_FormularioUsuario> {
   void initState() {
     super.initState();
     final u = widget.usuario;
-    _nombreCtrl = TextEditingController(text: u?['nombre_completo']?.toString() ?? '');
-    _emailCtrl = TextEditingController(text: u?['email']?.toString() ?? '');
-    _telefonoCtrl = TextEditingController(text: u?['telefono']?.toString() ?? '');
+    _nombreCtrl = TextEditingController(text: u?['nombre_completo'] ?? '');
+    _emailCtrl = TextEditingController(text: u?['email'] ?? '');
+    _telefonoCtrl = TextEditingController(text: u?['telefono'] ?? '');
     _passwordCtrl = TextEditingController();
-    _rol = u?['rol_nombre']?.toString() ?? 'Cliente';
+    _rol = u?['rol_nombre'] ?? u?['rol'] ?? 'Cliente';
   }
 
   @override
@@ -278,6 +277,7 @@ class _FormularioUsuarioState extends State<_FormularioUsuario> {
     setState(() => _guardando = true);
     try {
       if (widget.usuario == null) {
+        // Crear
         await Api.crearUsuario(
           nombre: _nombreCtrl.text.trim(),
           email: _emailCtrl.text.trim(),
@@ -288,7 +288,10 @@ class _FormularioUsuarioState extends State<_FormularioUsuario> {
           rol: _rol,
         );
       } else {
-        final data = <String, dynamic>{
+        // Editar (necesitas agregar método en Api)
+        final uri =
+            Uri.parse('http://localhost:5000/api/usuarios/${widget.usuario!['id']}');
+        final body = {
           'nombre_completo': _nombreCtrl.text.trim(),
           'email': _emailCtrl.text.trim(),
           if (_telefonoCtrl.text.trim().isNotEmpty)
@@ -296,7 +299,12 @@ class _FormularioUsuarioState extends State<_FormularioUsuario> {
           'rol': _rol,
           if (_passwordCtrl.text.isNotEmpty) 'password': _passwordCtrl.text,
         };
-        await Api.actualizarUsuario(widget.usuario!['id'], data);
+        final res = await http.put(uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body));
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          throw Exception('Error ${res.statusCode}: ${res.body}');
+        }
       }
 
       if (!mounted) return;
@@ -384,7 +392,7 @@ class _FormularioUsuarioState extends State<_FormularioUsuario> {
                   decoration: InputDecoration(
                     labelText: widget.usuario == null
                         ? 'Contraseña *'
-                        : 'Nueva contraseña (opcional)',
+                        : 'Nueva contraseña (dejar vacío para no cambiar)',
                     border: const OutlineInputBorder(),
                   ),
                   obscureText: true,
